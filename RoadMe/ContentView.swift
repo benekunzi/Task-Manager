@@ -9,78 +9,81 @@ import SwiftUI
 import CoreData
 
 struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Item.timestamp, ascending: true)],
-        animation: .default)
-    private var items: FetchedResults<Item>
-
+    @ObservedObject var projectModel: ProjectModel = ProjectModel()
+    @ObservedObject var coreDataModel: CoreDataModel = CoreDataModel()
+    
+    @State var selectedTab = "house"
+   
+    let sidebarWidth: CGFloat = UIScreen.main.bounds.width / 1.5
+    
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp!, formatter: itemFormatter)")
-                    } label: {
-                        Text(item.timestamp!, formatter: itemFormatter)
+        ZStack(alignment: Alignment(horizontal: .center, vertical: .bottom)) {
+            TabView(selection: $selectedTab) {
+                NavigationView {
+                    WelcomeView()
+                        .background(Color("BackgroundColor"))
+                        
+                }
+                .edgesIgnoringSafeArea(.bottom)
+                .zIndex(1)
+                .tag("house")
+                
+                VStack {
+                    Text("Person")
+                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color("BackgroundColor"))
+                    .zIndex(1)
+                    .tag("person")
+            }
+            
+            TabBarView(selectedTab: $selectedTab)
+                .overlay(
+                    HStack(alignment: .top) {
+                        Spacer()
+                        Image("Bee")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 50, height: 50)
+                            .onTapGesture {
+                                self.projectModel.showTaskEditor.toggle()
+                            }
+                        Spacer()
                     }
-                }
-                .onDelete(perform: deleteItems)
+                        .offset(y: -45)
+                )
+            
+            if (self.projectModel.showNameEditor) {
+                CreateProjectView()
+                    .zIndex(2)
+                    .transition(.move(edge: .bottom))
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+            if (self.projectModel.showTaskEditor) {
+                CreateTaskCardView()
+                    .zIndex(2)
+                    .transition(.move(edge: .bottom))
             }
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            if (self.projectModel.showEditTaskEditor) {
+                EditTaskEditor()
+                    .zIndex(2)
+                    .transition(.move(edge: .bottom))
             }
         }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { items[$0] }.forEach(viewContext.delete)
-
-            do {
-                try viewContext.save()
-            } catch {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-            }
+        .foregroundStyle(Color("TextColor"))
+        .preferredColorScheme(.light)
+        .edgesIgnoringSafeArea(.all)
+        .onAppear {
+            let mappedProjects = self.coreDataModel.mapToModel()
+            self.projectModel.projectsTasks = mappedProjects
+            self.projectModel.selectedTask = self.projectModel.default_Project
         }
+        .environmentObject(self.projectModel)
+        .environmentObject(self.coreDataModel)
+        .animation(.linear, value: self.projectModel.showTaskEditor)
+        .animation(.linear, value: self.projectModel.showNameEditor)
+        .animation(.linear, value: self.projectModel.showEditTaskEditor)
     }
 }
 
-private let itemFormatter: DateFormatter = {
-    let formatter = DateFormatter()
-    formatter.dateStyle = .short
-    formatter.timeStyle = .medium
-    return formatter
-}()
-
 #Preview {
-    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    ContentView()
 }

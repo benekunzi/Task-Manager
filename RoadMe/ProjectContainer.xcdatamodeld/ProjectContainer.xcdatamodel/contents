@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="23605" systemVersion="24A348" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="ProjectTaskEntity" representedClassName="ProjectTaskEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="color" optional="YES" attributeType="String"/>
+        <attribute name="coverImage" optional="YES" attributeType="Binary"/>
+        <attribute name="descriptions" optional="YES" attributeType="String"/>
+        <attribute name="iconImage" optional="YES" attributeType="Binary"/>
+        <attribute name="iconString" optional="YES" attributeType="String"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="index" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="isCompleted" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="name" attributeType="String"/>
+        <attribute name="parentTaskID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="process" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="subTasks" toMany="YES" deletionRule="Nullify" destinationEntity="ProjectTaskEntity"/>
+    </entity>
+</model>

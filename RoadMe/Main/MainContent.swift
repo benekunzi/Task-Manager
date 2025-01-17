@@ -9,8 +9,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct MainContentView: View {
-    
-//    @ObservedObject var task: ProjectTask
     @Binding var showMoreOptions: Bool
     @Binding var isWiggling: Bool
     
@@ -31,6 +29,7 @@ struct MainContentView: View {
                          isWiggling: $isWiggling,
                          taskCardWidth: $taskCardWidth,
                          numberOfColumns: $numberOfColumns)
+                .padding(.horizontal, numberOfColumns == 1 ? 20 : 0)
                 .readWidth {
                     taskCardWidth = $0
                 }
@@ -57,8 +56,9 @@ struct MainContentView: View {
             }
             
             for task in tasks {
-//                let newIndex = tasks.firstIndex(where: { $0.id == task.id }) ?? Int(task.index)
-//                coreDataModel.updateIndex(taskID: task.id, index: Int32(newIndex))
+                let newIndex = tasks.firstIndex(where: { $0.id == task.id }) ?? Int(task.index)
+                task.index = Int32(newIndex)
+                coreDataModel.updateIndex(taskID: task.id, index: Int32(newIndex))
             }
         }
     }

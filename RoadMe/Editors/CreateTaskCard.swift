@@ -16,51 +16,61 @@ struct CreateTaskCardView: View {
         name: "",
         description: "",
         subtasks: [],
-        color: "BlushPink",
+        color: "",
         isCompleted: false)
-    @State private var showPicker: Bool = false
-    @State private var showImagePicker: Bool = false
-    @State private var inputImage: UIImage?
+    @State private var selectedColor: String = ""
+    
+    @ObservedObject var themeManger: ThemeManager = ThemeManager()
     
     var body: some View {
         VStack(spacing: 0) {
-            TopImageView(newProject: newTask, showPicker: $showPicker, toggleEditor: self.$projectModel.showTaskEditor)
-            VStack(alignment: .leading, spacing: 15) {
-                CardTopView(newTask: newTask,
-                            showPicker: $showPicker,
-                            showImagePicker: $showImagePicker)
-                
-                ScrollView(.horizontal) {
-                    HStack {
-                        Circle()
-                            .strokeBorder(.gray, lineWidth: 2)
-                            .background(Circle().fill(Color(ColorPalette.blushPink)))
-                            .frame(width: 35, height: 35)
+            HStack(alignment: .center) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16).weight(.bold))
+                    .padding(5)
+                    .foregroundStyle(Color("LightGray"))
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                    .onTapGesture {projectModel.showTaskEditor = false}
+                Spacer()
+                CreateTaskButtonView(newTask: newTask, selectedColor: $selectedColor)
+            }
+            .padding(.horizontal)
+            .padding(.top)
+            
+            VStack(alignment: .leading, spacing: 25) {
+                CardTopView(newTask: newTask)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Task Color")
+                        .font(.system(size: 20).weight(.bold))
+                    ScrollView(.horizontal) {
+                        HStack {
+                            ForEach(self.projectModel.selectedTheme.colorPalette, id: \.self) {color in
+                                Circle()
+                                    .strokeBorder(.gray, lineWidth: 1)
+                                    .background(Circle().fill(Color(color)))
+                                    .frame(width: 35, height: 35)
+                                    .onTapGesture {
+                                        self.selectedColor = color
+                                    }
+                            }
+                        }
                     }
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Task Icon")
+                        .font(.system(size: 20).weight(.bold))
                 }
                 Spacer()
             }
             .padding()
-            
-            CreateTaskButtonView(newTask: newTask)
-
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color("BackgroundColor"))
+        .background(Color(selectedColor == "" ? projectModel.selectedTheme.colorPalette.first! : selectedColor))
         .foregroundStyle(Color("TextColor"))
-        .fullScreenCover(isPresented: self.$showPicker) {
-            IconPicker(newProject: newTask, showPicker: $showPicker)
-        }
-        .onChange(of: inputImage) { _ in loadImage() }
-        .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $inputImage)
-        }
         .edgesIgnoringSafeArea(.top)
-    }
-    
-    func loadImage() {
-        guard let inputImage = inputImage else { return }
-        newTask.coverImage = inputImage
+        .onAppear {
+            self.selectedColor = self.projectModel.selectedTheme.colorPalette.first!
+        }
     }
 }
 
@@ -70,11 +80,13 @@ struct CreateTaskButtonView: View {
     @EnvironmentObject var coreDataModel: CoreDataModel
     
     @StateObject var newTask: ProjectTask
+    @Binding var selectedColor: String
     
     var body: some View {
         Button {
             if newTask.name != "" {
                 let selectedTask = projectModel.selectedTask
+                newTask.color = selectedColor
                 newTask.index = Int32(selectedTask.subtasks.count)
                 newTask.parentTaskId = selectedTask.id
                 self.projectModel.projectsTasks = self.coreDataModel.addSubtask(to: selectedTask.id, subtask: newTask)
@@ -89,16 +101,19 @@ struct CreateTaskButtonView: View {
         } label: {
             if newTask.name != "" {
                 Text("Create Task")
-                    .padding()
-                    .padding(.horizontal)
-                    .foregroundColor(Color("TextColor"))
-                    .background(RoundedRectangle(cornerRadius: 10).stroke(Color("TextColor"), lineWidth: 1))
+                    .font(.system(size: 16).weight(.bold))
+                    .foregroundColor(Color("LightGray"))
+                    .padding(5)
+                    .padding(.horizontal, 3)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
             } else {
                 Text("Create Task")
-                    .padding()
-                    .padding(.horizontal)
+                    .font(.system(size: 16).weight(.bold))
                     .foregroundColor(Color.gray)
-                    .background(RoundedRectangle(cornerRadius: 10).stroke(Color.gray, lineWidth: 1))
+                    .padding(5)
+                    .padding(.horizontal, 3)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+
             }
         }
     }
@@ -106,33 +121,9 @@ struct CreateTaskButtonView: View {
 
 struct CardTopView: View {
     @StateObject var newTask: ProjectTask
-    @Binding var showPicker: Bool
-    @Binding var showImagePicker: Bool
     
     var body: some View {
         VStack(alignment: .leading) {
-            HStack(spacing: 20) {
-                if (newTask.iconString == nil && newTask.iconImage == nil) {
-                    HStack {
-                        Image(systemName: "face.smiling")
-                        Text("Icon hinzufügen")
-                    }.font(.system(size: 12))
-                        .onTapGesture {
-                            self.showPicker.toggle()
-                        }
-                }
-                if (newTask.coverImage == nil) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "doc")
-                        Text("Cover hinzufügen")
-                    }
-                    .font(.system(size: 12))
-                    .onTapGesture {
-                        self.showImagePicker.toggle()
-                    }
-                }
-            }
-            
             TextField(newTask.name == "" ? "Task Name" : newTask.name,
                       text: $newTask.name)
             .autocorrectionDisabled()

@@ -19,7 +19,7 @@ class ProjectModel: ObservableObject {
         isCompleted: false)
     @Published var selectedProject: ProjectTask?
     @Published var draggedTask: ProjectTask?
-    @Published var showNameEditor: Bool = false
+    @Published var showProjectEditor: Bool = false
     @Published var showTaskEditor: Bool = false
     @Published var filteredTasks: [ProjectTask] = []
     @Published var updateUI: Bool = false
@@ -27,10 +27,12 @@ class ProjectModel: ObservableObject {
     @Published var showEditTaskEditor: Bool = false
     @Published var taskToEdit: ProjectTask?
     @Published var deviceType: DeviceType = .iPhone
+    @Published var selectedTheme: Theme = themeMountain
     
     init() {
         self.deviceType = UIDevice.current.userInterfaceIdiom == .phone ? .iPhone : UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .Mac
         print(deviceType)
+        self.selectedTask = self.default_Project
         updateFilteredTasks()
     }
     
@@ -90,6 +92,7 @@ class ProjectTask: ObservableObject, Identifiable, Equatable {
     @Published var iconString: String?
     @Published var iconImage: UIImage?
     @Published var coverImage: UIImage?
+    @Published var theme: Theme?
     
     init(id: UUID,
          name: String,

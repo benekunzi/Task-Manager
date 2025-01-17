@@ -23,7 +23,7 @@ struct CardSHeightLookUp {
     private static func iPhoneCardHeight(for numberOfColumns: Int, orientation: UIDeviceOrientation) -> CGFloat {
         switch numberOfColumns {
         case 1:
-            return orientation.isPortrait ? 150 : 170
+            return orientation.isPortrait ? 130 : 150
         case 2:
             return orientation.isPortrait ? 120 : 150
         case 3:
@@ -31,7 +31,7 @@ struct CardSHeightLookUp {
         case 4:
             return orientation.isPortrait ? 80 : 110
         default:
-            return orientation.isPortrait ? 170 : 200
+            return orientation.isPortrait ? 130 : 150
         }
     }
     

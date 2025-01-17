@@ -11,10 +11,6 @@ struct EditTaskEditor: View {
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
     
-    @State private var showPicker: Bool = false
-    @State private var showImagePicker: Bool = false
-    @State private var selectedImage: UIImage?
-    @State private var inputImage: UIImage?
     @StateObject var lastTask: ProjectTask = ProjectTask(
         id: UUID(),
         name: "",
@@ -26,63 +22,54 @@ struct EditTaskEditor: View {
     var body: some View {
         VStack {
             VStack(alignment: .leading, spacing: 0) {
-                TopImageView(newProject: lastTask, showPicker: $showPicker, toggleEditor: self.$projectModel.showEditTaskEditor)
+                HStack() {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16).weight(.bold))
+                        .padding(5)
+                        .foregroundStyle(Color("LightGray"))
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                        .onTapGesture {projectModel.showEditTaskEditor = false}
+                    
+                    Spacer()
+                    
+                    EditTaskButtonView(lastTask: lastTask)
+                }
+                .padding(.horizontal)
+                .padding(.top)
 
                 VStack(alignment: .leading, spacing: 15) {
-                    CardTopView(newTask: lastTask, showPicker: $showPicker, showImagePicker: $showImagePicker)
+                    CardTopView(newTask: lastTask)
                     
-                    if (lastTask.coverImage == nil) {
-                        Text("Project Color")
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Card Color")
+                            .font(.system(size: 20).weight(.bold))
                         ScrollView(.horizontal) {
                             HStack {
-                                Circle()
-                                    .strokeBorder(.gray, lineWidth: 1)
-                                    .background(Circle().fill(Color(ColorPalette.blushPink)))
-                                    .frame(width: 35, height: 35)
+                                ForEach(self.projectModel.selectedTheme.colorPalette, id: \.self) {color in
+                                    Circle()
+                                        .strokeBorder(.gray, lineWidth: 1)
+                                        .background(Circle().fill(Color(color)))
+                                        .frame(width: 35, height: 35)
+                                        .onTapGesture {
+                                            lastTask.color = color
+                                        }
+                                }
                             }
                         }
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Task Icon")
+                            .font(.system(size: 20).weight(.bold))
                     }
                     Spacer()
                 }
                 .padding()
             }
-
-            Button {
-                if lastTask != projectModel.taskToEdit {
-                    self.projectModel.projectsTasks = self.coreDataModel.addSubtask(to: lastTask.id, subtask: lastTask)
-                    if let updatedTask = findTask(in: projectModel.projectsTasks, withID: lastTask.id) {
-                        projectModel.changeSelectedTask(task: updatedTask)
-                    } else {
-                        print("task wasnt found")
-                        projectModel.changeSelectedTask(task: projectModel.default_Project)
-                    }
-                }
-            } label: {
-                if lastTask != projectModel.taskToEdit {
-                    Text("Update Project")
-                        .padding()
-                        .padding(.horizontal)
-                        .foregroundColor(Color("TextColor"))
-                        .background(RoundedRectangle(cornerRadius: 10).stroke(Color("TextColor"), lineWidth: 1))
-                } else {
-                    Text("Update Project")
-                        .padding()
-                        .padding(.horizontal)
-                        .foregroundColor(Color.gray)
-                        .background(RoundedRectangle(cornerRadius: 10).stroke(Color.gray, lineWidth: 1))
-                }
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color("BackgroundColor"))
+        .background(Color(lastTask.color))
         .foregroundStyle(Color("TextColor"))
-        .fullScreenCover(isPresented: self.$showPicker) {
-            IconPicker(newProject: lastTask, showPicker: $showPicker)
-        }
-        .onChange(of: inputImage) { _ in loadImage() }
-        .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $inputImage)
-        }
         .edgesIgnoringSafeArea(.top)
         .onAppear {
             if let taskToEdit = projectModel.taskToEdit {
@@ -104,9 +91,51 @@ struct EditTaskEditor: View {
             self.projectModel.taskToEdit = nil
         }
     }
+}
+
+struct EditTaskButtonView: View {
     
-    func loadImage() {
-        guard let inputImage = inputImage else { return }
-        lastTask.coverImage = inputImage
+    @StateObject var lastTask: ProjectTask
+    
+    @EnvironmentObject var projectModel: ProjectModel
+    @EnvironmentObject var coreDataModel: CoreDataModel
+    
+    var body: some View {
+        if let taskToEdit = projectModel.taskToEdit {
+            Button {
+                if ((lastTask.name != taskToEdit.name) ||
+                    (lastTask.description != taskToEdit.description) ||
+                    (lastTask.color != taskToEdit.color)) {
+                    self.projectModel.projectsTasks = self.coreDataModel.updateTask(taskToEdit: lastTask)
+                    if let updatedTask = findTask(in: projectModel.projectsTasks, withID: lastTask.id) {
+                        projectModel.changeSelectedTask(task: updatedTask)
+                        projectModel.showEditTaskEditor = false
+                    } else {
+                        print("task wasnt found")
+                        projectModel.changeSelectedTask(task: projectModel.default_Project)
+                    }
+                }
+            } label: {
+                if ((lastTask.name != taskToEdit.name) ||
+                    (lastTask.description != taskToEdit.description) ||
+                    (lastTask.color != taskToEdit.color)) {
+                    Text("Update Project")
+                        .font(.system(size: 16).weight(.bold))
+                        .foregroundColor(Color("LightGray"))
+                        .padding(5)
+                        .padding(.horizontal, 3)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                } else {
+                    Text("Update Project")
+                        .font(.system(size: 16).weight(.bold))
+                        .foregroundColor(Color.gray)
+                        .padding(5)
+                        .padding(.horizontal, 3)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                }
+            }
+        } else {
+            EmptyView()
+        }
     }
 }

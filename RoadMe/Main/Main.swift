@@ -22,21 +22,14 @@ struct MainView: View {
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
-        VStack {
+        ZStack {
             ScrollView(showsIndicators: false) {
                 Spacer(minLength: 10)
-                ZStack {
-                    // Draw connecting line if there are multiple cards
-//                    if (projectModel.selectedTask.subtasks.count > 1 && !showMoreOptions)  {
-//                        ConnectingLines(positions: cardPositions)
-//                    }
-                    MainContentView(showMoreOptions: $showMoreOptions,
-                                    isWiggling: $isWiggling,
-                                    columns: self.$columns,
-                                    numberOfColumns: $numberOfColumns)
-                    .id(task.id)
-                    
-                }
+                MainContentView(showMoreOptions: $showMoreOptions,
+                                isWiggling: $isWiggling,
+                                columns: self.$columns,
+                                numberOfColumns: $numberOfColumns)
+                .id(task.id)
                 .onChange(of: projectModel.selectedTask) { task in
                     for subs in task.subtasks {
                         print("\(subs.name): \(subs.index)")
@@ -46,9 +39,35 @@ struct MainView: View {
                 }
                 .onChange(of: showMoreOptions) { isWiggling = $0 }
             }
+            
+            VStack {
+                Spacer()
+                HStack {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20).weight(.bold))
+                        .padding(5)
+                        .background(Color("Theme-1-VeryDarkGreen"))
+                        .foregroundStyle(Color.white)
+                        .clipShape(Circle())
+                        .onTapGesture {
+                            if (projectModel.selectedProject == projectModel.default_Project) {
+                                projectModel.showProjectEditor.toggle()
+                            } else {
+                                projectModel.showTaskEditor.toggle()
+                            }
+                        }
+                    Spacer()
+                }
+            }
+                .offset(y: -95)
+                .padding(.leading, 10)
         }
         .frame(maxWidth: .infinity)
-        .background(Color("BackgroundColor"))
+        .background(
+            Image("Theme-1")
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+            .edgesIgnoringSafeArea(.all))
         .onTapGesture {
             if (showMoreOptions) {
                 showMoreOptions.toggle()
@@ -71,22 +90,24 @@ struct MainView: View {
                                     self.showMoreOptions = false
                                 }
                             } else {
-                                self.projectModel.changeSelectedTask(task: projectModel.default_Project)
-                                dismiss()
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    self.projectModel.changeSelectedTask(task: projectModel.default_Project)
+                                    dismiss()
+                                }
                             }
                         }
                     } label: {
                         Image(systemName: "chevron.backward")
-                            .font(Font.body.bold())
-                            .foregroundColor(Color.gray)
+                            .font(.system(.body).weight(.bold))
+                            .foregroundColor(Color.black)
                     }
                 }
             }
             
             ToolbarItem(placement: .principal) {
                 Text(navigationTitle)
-                    .font(Font.body.bold())
-                    .foregroundColor(Color.gray)
+                    .font(.system(.body).weight(.bold))
+                    .foregroundColor(Color.black)
             }
             
             ToolbarItemGroup(placement: .topBarTrailing) {
@@ -107,8 +128,8 @@ struct MainView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .font(Font.body.bold())
-                        .foregroundColor(Color.gray)
+                        .font(.system(.body).weight(.bold))
+                        .foregroundColor(Color.black)
                 }
             }
         }
@@ -119,28 +140,9 @@ struct MainView: View {
             self.projectModel.changeSelectedTask(task: task)
             self.navigationTitle = task.name
             self.projectModel.selectedProject = task
+            self.projectModel.selectedTheme = task.theme ?? themeMountain
         }
         .edgesIgnoringSafeArea(.bottom)
-    }
-}
-
-struct BlurView: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIVisualEffectView {
-        let view = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialLight))
-        return view
-    }
-    
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
-}
-
-extension View {
-    @ViewBuilder
-    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
     }
 }
 

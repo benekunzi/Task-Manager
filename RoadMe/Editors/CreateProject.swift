@@ -12,8 +12,6 @@ struct CreateProjectView: View {
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
     
-    @State private var showPicker: Bool = false
-    @State private var showImagePicker: Bool = false
     @State private var selectedImage: UIImage?
     @State private var inputImage: UIImage?
     @StateObject var newProject: ProjectTask = ProjectTask(
@@ -23,65 +21,69 @@ struct CreateProjectView: View {
         subtasks: [],
         color: "BlushPink",
         isCompleted: false)
+    @ObservedObject var themeManager: ThemeManager = ThemeManager()
     
     var body: some View {
         VStack {
             VStack(alignment: .leading, spacing: 0) {
-                TopImageView(newProject: newProject, showPicker: $showPicker, toggleEditor: self.$projectModel.showNameEditor)
-
-                VStack(alignment: .leading, spacing: 15) {
-                    CardTopView(newTask: newProject, showPicker: $showPicker, showImagePicker: $showImagePicker)
+                HStack() {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16).weight(.bold))
+                        .padding(5)
+                        .foregroundStyle(Color("LightGray"))
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                        .onTapGesture {projectModel.showProjectEditor = false}
                     
-                    if (newProject.coverImage == nil) {
-                        Text("Project Color")
+                    Spacer()
+                    
+                    CreateProjectButtonView(newProject: newProject, themeManager: themeManager)
+                }
+                .padding(.horizontal)
+                .padding(.top)
+
+                VStack(alignment: .leading, spacing: 25) {
+                    CardTopView(newTask: newProject)
+                    
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Themes")
+                            .font(.system(size: 20).weight(.bold))
                         ScrollView(.horizontal) {
                             HStack {
-                                Circle()
-                                    .strokeBorder(.gray, lineWidth: 1)
-                                    .background(Circle().fill(Color(ColorPalette.blushPink)))
-                                    .frame(width: 35, height: 35)
+                                ForEach(themeManager.themes) {theme in
+                                    theme.backgroundImage
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 150, height: 100)
+                                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                                }
                             }
                         }
                     }
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Project Color Palette")
+                            .font(.system(size: 20).weight(.bold))
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 15) {
+                                ForEach(themeManager.currentTheme.colorPalette, id:\.self) { c in
+                                    Circle()
+                                        .strokeBorder(.gray, lineWidth: 1)
+                                        .background(Circle().fill(Color(c)))
+                                        .frame(width: 35, height: 35)
+                                }
+                            }
+                        }
+                    }
+                    Text("Project Icons")
+                        .font(.system(size: 20).weight(.bold))
                     Spacer()
                 }
                 .padding()
-            }
-
-            Button {
-                if newProject.name != "" {
-                    let mappedProjects = self.coreDataModel.addRootTask(task: newProject)
-                    self.projectModel.toggleUIUpdate()
-                    self.projectModel.projectsTasks = mappedProjects
-                    self.projectModel.selectedTask = newProject
-                    self.projectModel.showNameEditor = false
-                }
-            } label: {
-                if newProject.name != "" {
-                    Text("Create Project")
-                        .padding()
-                        .padding(.horizontal)
-                        .foregroundColor(Color("TextColor"))
-                        .background(RoundedRectangle(cornerRadius: 10).stroke(Color("TextColor"), lineWidth: 1))
-                } else {
-                    Text("Create Project")
-                        .padding()
-                        .padding(.horizontal)
-                        .foregroundColor(Color.gray)
-                        .background(RoundedRectangle(cornerRadius: 10).stroke(Color.gray, lineWidth: 1))
-                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("BackgroundColor"))
         .foregroundStyle(Color("TextColor"))
-        .fullScreenCover(isPresented: self.$showPicker) {
-            IconPicker(newProject: newProject, showPicker: $showPicker)
-        }
         .onChange(of: inputImage) { _ in loadImage() }
-        .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $inputImage)
-        }
         .edgesIgnoringSafeArea(.top)
     }
     
@@ -102,70 +104,41 @@ func getSafeAreaTop()->CGFloat{
     return (keyWindow?.safeAreaInsets.top) ?? 0.0
 }
 
-struct TopImageView: View {
+struct CreateProjectButtonView: View {
+    
     @StateObject var newProject: ProjectTask
-    @Binding var showPicker: Bool
-    @Binding var toggleEditor: Bool
+    @ObservedObject var themeManager: ThemeManager
     
     @EnvironmentObject var projectModel: ProjectModel
+    @EnvironmentObject var coreDataModel: CoreDataModel
     
     var body: some View {
-        VStack {
-            if (newProject.coverImage == nil) {
-                Color(newProject.color)
-            } else {
-                Image(uiImage: newProject.coverImage!)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
+        Button {
+            if newProject.name != "" {
+                let mappedProjects = self.coreDataModel.addRootTask(task: newProject,
+                                                                    themeId: self.themeManager.currentTheme.id)
+                self.projectModel.toggleUIUpdate()
+                self.projectModel.projectsTasks = mappedProjects
+                self.projectModel.selectedTask = newProject
+                self.projectModel.selectedTheme = self.themeManager.currentTheme
+                self.projectModel.showProjectEditor = false
             }
-        }
-        .frame(height: 175)
-        .clipped()
-        .overlay {
-            VStack {
-                HStack() {
-                    if (newProject.coverImage != nil) {
-                        Text("Entfernen")
-                            .foregroundStyle(Color.blue)
-                            .padding(.horizontal)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.gray.opacity(0.3)))
-                            .onTapGesture {
-                                newProject.coverImage = nil
-                            }
-                    }
-                    Spacer()
-                    Image(systemName: "xmark")
-                        .font(.headline)
-                        .padding(3)
-                        .background(Circle().fill(Color("BackgroundColor")))
-                        .onTapGesture {toggleEditor = false}
-                }.padding(.trailing)
-                Spacer()
-            }.padding(.top, getSafeAreaTop())
-        }
-        .overlay {
-            HStack {
-                VStack(alignment: .leading) {
-                    Spacer()
-                    if (newProject.iconString != nil) {
-                        Text(newProject.iconString!)
-                            .font(.system(size: 50))
-                            .onTapGesture {
-                                self.showPicker = true
-                            }
-                    }
-                    else if (newProject.iconImage != nil) {
-                        Image(uiImage: newProject.iconImage!)
-                            .resizable()
-                            .frame(width: 50, height: 50)
-                            .mask(RoundedRectangle(cornerRadius: 10))
-                            .onTapGesture {
-                                self.showPicker = true
-                            }
-                    }
-                }
-                Spacer()
-            }.padding(.leading)
+        } label: {
+            if newProject.name != "" {
+                Text("Create Project")
+                    .font(.system(size: 16).weight(.bold))
+                    .foregroundColor(Color("LightGray"))
+                    .padding(5)
+                    .padding(.horizontal, 3)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+            } else {
+                Text("Create Project")
+                    .font(.system(size: 16).weight(.bold))
+                    .foregroundColor(Color.gray)
+                    .padding(5)
+                    .padding(.horizontal, 3)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+            }
         }
     }
 }

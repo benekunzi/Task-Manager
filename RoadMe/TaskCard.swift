@@ -17,76 +17,21 @@ struct TaskCard: View {
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
     
-    @State var taskName: String = ""
     @State private var orientation = UIDeviceOrientation.unknown
-    
-    let taskColor = Color("BlushPink")
+    @State private var isTapped: Bool = false
+    @State private var isPressed: Bool = false
     
     var body: some View {
         ZStack {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 10) {
-                    Image(systemName: task.isCompleted ? "checkmark.circle" : "circle")
-                        .font(.system(size: 14).bold())
-                        .onTapGesture {
-                            projectModel.updateCompleteStatus(task: task)
-                            coreDataModel.updateIsCompleted(taskID: task.id, isCompleted: task.isCompleted)
-                            projectModel.projectsTasks.first(where: { $0.id == projectModel.selectedProject!.id })!.calculateProcess()
-                        }
-                    Text(task.name)
-                        .lineLimit(1)
-                        .font(.system(
-                            size: TextSizeLookup.getFontSize(
-                                for: numberOfColumns,
-                                deviceType: projectModel.deviceType,
-                                orientation: .vertical,
-                                textType: .title)).bold())
-                    Spacer()
-                }
-                Text(task.description)
-                    .font(.system(size:
-                                    TextSizeLookup.getFontSize(
-                                        for: numberOfColumns,
-                                        deviceType: projectModel.deviceType,
-                                        orientation: .vertical,
-                                        textType: .description)))
-                    .lineLimit(1)
-                    .foregroundStyle(Color.gray)
-                HStack {
-                    Spacer()
-                    Text("\(task.subtasks.filter(\.isCompleted).count)/\(task.subtasks.count)")
-                }
-                .font(.system(size:
-                                TextSizeLookup.getFontSize(
-                                    for: numberOfColumns,
-                                    deviceType: projectModel.deviceType,
-                                    orientation: .vertical,
-                                    textType: .description)))
-                .foregroundStyle(Color.gray)
-                VStack(alignment: .leading) {
-                    ForEach(task.subtasks.filter({$0.isCompleted == false}).prefix(3)) { subtask in
-                        HStack {
-                            Image(systemName: "circle.fill")
-                                .font(.system(size: 6))
-                            Text(subtask.name)
-                                .font(.system(size:
-                                                TextSizeLookup.getFontSize(
-                                                    for: numberOfColumns,
-                                                    deviceType: projectModel.deviceType,
-                                                    orientation: .vertical,
-                                                    textType: .subtask)))
-                            Spacer()
-                        }
-                    }
-                }
-                Spacer()
-            }.frame(maxWidth: .infinity)
+            
+            TaskCardContentView(task: task, numberOfColumns: $numberOfColumns)
+            
             VStack {
                 HStack(alignment: .top) {
                     Spacer()
                     Image(systemName: "info.circle.fill")
-                        .foregroundStyle(Color.gray)
-                        .font(.system(size: 16))
+                        .foregroundStyle(Color("LightGray"))
+                        .font(.system(size: 16).weight(.bold))
                         .onTapGesture {
                             projectModel.taskToEdit = task
                             self.projectModel.showEditTaskEditor.toggle()
@@ -95,137 +40,209 @@ struct TaskCard: View {
                 Spacer()
             }
         }
-        .foregroundStyle(Color("TextColor").opacity(0.75))
-        .padding(10)
-        .background(ZStack {
-            Color.white
-        })
+        .modifier(ChunkyButtonModifier(isTap: $isTapped, color: $task.color))
         .frame(height: CardSHeightLookUp.getCardHeight(for: numberOfColumns, deviceType: projectModel.deviceType, orientation: orientation))
-        .mask(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.gray.opacity(0.2), lineWidth: 1))
-//        .padding(.horizontal)
-        .modifier(ProcessBorderModifier(process: task.process, color: Color.red))
-        .overlay(
-            TaskOptionOverlayView(showMoreOptions: $showMoreOptions, task: task)
+        .onTapGesture(count: 1) {
+            print("Tap Gesture. \(Date().timeIntervalSince1970)")
+            self.isTapped = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
+                if (!showMoreOptions) {
+                    task.parentTaskId = self.projectModel.selectedTask.id
+                    self.projectModel.changeSelectedTask(task: task)
+                } else {
+                    showMoreOptions = false
+                }
+                isTapped = false
+            })
+        }
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.5)
+                .onEnded() { value in
+                    print("LongPressGesture started. \(Date().timeIntervalSince1970)")
+                    self.isTapped = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
+                        if (!showMoreOptions) {
+                            showMoreOptions = true
+                            self.isTapped = false
+                        }
+                    })
+                }
+                .sequenced(before:TapGesture(count: 1)
+                .onEnded {
+                    print("LongPressGesture ended. \(Date().timeIntervalSince1970)")
+                    self.isTapped = false
+                }
+            )
         )
-        .onChange(of: self.taskName) { newValue in
-            task.name = newValue
-        }
-        .onTapGesture {
-            if (!showMoreOptions) {
-                task.parentTaskId = self.projectModel.selectedTask.id
-                self.projectModel.changeSelectedTask(task: task)
-            } else {
-                showMoreOptions = false
+//            .overlay(
+//                RoundedRectangle(cornerRadius: 20, style: .continuous)
+//                    .stroke(Color.gray.opacity(0.2), lineWidth: 1))
+            .overlay(
+                TaskOptionOverlayView(showMoreOptions: $showMoreOptions, task: task)
+            )
+            .onRotate { newOrientation in
+                orientation = newOrientation
             }
-        }
-        .onLongPressGesture {
-            if (!showMoreOptions) {
-                showMoreOptions = true
+            .rotationEffect(.degrees(isWiggling ? 2.5 : 0))
+            .rotation3DEffect(.degrees(0), axis: (x: 0, y: -5, z: 0))
+            .animation(
+                isWiggling
+                ? Animation.easeInOut(duration: 0.15).repeatForever(autoreverses: true)
+                : .default, // Default stops the animation
+                value: isWiggling
+            )
+    }
+}
+
+struct TaskCardContentView: View {
+    
+    @ObservedObject var task: ProjectTask
+    @Binding var numberOfColumns: Int
+    
+    @EnvironmentObject var projectModel: ProjectModel
+    @EnvironmentObject var coreDataModel: CoreDataModel
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: task.isCompleted ? "checkmark.circle" : "circle")
+                    .font(.system(size: 14).weight(.bold))
+                    .foregroundStyle(Color("LightGray"))
+                    .onTapGesture {
+                        projectModel.updateCompleteStatus(task: task)
+                        coreDataModel.updateIsCompleted(taskID: task.id, isCompleted: task.isCompleted)
+                        _ = projectModel.projectsTasks.first(where: { $0.id == projectModel.selectedProject!.id })!.calculateProcess()
+                    }
+                Text(task.name)
+                    .lineLimit(1)
+                    .font(.system(
+                        size: TextSizeLookup.getFontSize(
+                            for: numberOfColumns,
+                            deviceType: projectModel.deviceType,
+                            orientation: .vertical,
+                            textType: .title)).weight(.bold))
+                Spacer()
             }
-        }
-        .onRotate { newOrientation in
-            orientation = newOrientation
-        }
-        .rotationEffect(.degrees(isWiggling ? 2.5 : 0))
-        .rotation3DEffect(.degrees(0), axis: (x: 0, y: -5, z: 0))
-        .animation(
-            isWiggling
-            ? Animation.easeInOut(duration: 0.15).repeatForever(autoreverses: true)
-            : .default, // Default stops the animation
-            value: isWiggling
-        )
+            Text(task.description)
+                .font(.system(size:
+                                TextSizeLookup.getFontSize(
+                                    for: numberOfColumns,
+                                    deviceType: projectModel.deviceType,
+                                    orientation: .vertical,
+                                    textType: .description)).weight(.semibold))
+                .lineLimit(1)
+                .foregroundStyle(Color("LightGray"))
+            HStack {
+                Spacer()
+                Text("\(task.subtasks.filter(\.isCompleted).count)/\(task.subtasks.count)")
+            }
+            .font(.system(size:
+                            TextSizeLookup.getFontSize(
+                                for: numberOfColumns,
+                                deviceType: projectModel.deviceType,
+                                orientation: .vertical,
+                                textType: .description)).weight(.semibold))
+            .foregroundStyle(Color("LightGray"))
+            Spacer()
+            VStack(alignment: .leading) {
+                ForEach(task.subtasks.filter({$0.isCompleted == false}).prefix(3)) { subtask in
+                    HStack {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 6))
+                        Text(subtask.name)
+                            .font(.system(size:
+                                            TextSizeLookup.getFontSize(
+                                                for: numberOfColumns,
+                                                deviceType: projectModel.deviceType,
+                                                orientation: .vertical,
+                                                textType: .subtask)).weight(.semibold))
+                        Spacer()
+                    }
+                }
+            }
+        }.frame(maxWidth: .infinity)
+    }
+}
+
+struct ChunkyButtonModifier: ViewModifier {
+    
+    @Binding var isTap: Bool
+    @Binding var color: String
+    
+    func body(content: Content) -> some View {
+        content
+            .padding()
+            .background(
+                ZStack {
+                    // Background shadow for 3D effect
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .strokeBorder(.black, lineWidth: 0)
+                        .background(ZStack {
+                            RoundedRectangle(cornerRadius: 15, style: .continuous).fill(.black)
+                            RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color(color).opacity(0.5))
+                        })
+                        .offset(y: isTap ? 0 : 5)
+                        .animation(.easeInOut(duration: 0.1), value: isTap) // Animation for shadow
+                    // Foreground button
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .strokeBorder(.black, lineWidth: 0)
+                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color(color)))
+                }
+            )
+            .offset(y: isTap ? 5 : 0) // Button movement animation
+            .animation(.easeInOut(duration: 0.1), value: isTap) // Smooth animation
+    }
+}
+
+struct WelcomeChunkyButton: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                ZStack {
+                    // Background shadow for 3D effect
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .strokeBorder(.black, lineWidth: 0)
+                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color("Theme-1-VeryDarkGreen")))
+                        .offset(y: configuration.isPressed ? 0 : 5)
+                        .animation(.easeInOut(duration: 0.1), value: configuration.isPressed) // Animation for shadow
+                    // Foreground button
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .strokeBorder(.black, lineWidth: 0)
+                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(.white))
+                }
+            )
+            .onChange(of: configuration.isPressed) { _ in print("changed")}
+            .offset(y: configuration.isPressed ? 5 : 0) // Button movement animation
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed) // Smooth animation
+        
+    }
+}
+
+struct WelcomeChunkyButtonModifier: ViewModifier {
+    
+    @Binding var isTap: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .background(
+                ZStack {
+                    // Background shadow for 3D effect
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .strokeBorder(.black, lineWidth: 0)
+                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color("Theme-1-VeryDarkGreen")))
+                        .offset(y: isTap ? 0 : 5)
+                        .animation(.easeInOut(duration: 0.1), value: isTap) // Animation for shadow
+                    // Foreground button
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .strokeBorder(.black, lineWidth: 0)
+                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(.white))
+                }
+            )
+            .offset(y: isTap ? 5 : 0) // Button movement animation
+            .animation(.easeInOut(duration: 0.1), value: isTap) // Smooth animation
     }
 }
 
 #Preview {
     ContentView()
-}
-
-struct ProcessBorderModifier: ViewModifier {
-    var process: Double // Value between 0 and 1
-    var color: Color
-    var lineWidth: CGFloat = 2
-
-    func body(content: Content) -> some View {
-        content
-            .overlay(
-                ZStack {
-                    // Right Top Corner
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .trim(from: 0.75, to: 0.75 + min(mapProcess(minDomain: 0, maxDomain: 0.5, value: process), 0.25))
-                        .glow(fill: Color.red, lineWidth: lineWidth)
-                        .rotationEffect(.degrees(0)) // Default orientation
-
-                    // Left Side
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .trim(from: 0.75 - min(mapProcess(minDomain: 0, maxDomain: 0.5, value: process), 0.25), to: 0.75)
-                        .glow(fill: Color.red, lineWidth: lineWidth)
-                        .rotationEffect(.degrees(0)) // Default orientation
-
-                    // Right Bottom Side
-                    if process > 0.5 {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .trim(from: 0 , to: min(mapProcess(minDomain: 0, maxDomain: 0.25, value: process), 0.25))
-                            .glow(fill: Color.red, lineWidth: lineWidth)
-                            .rotationEffect(.degrees(0)) // Default orientation
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .trim(from: 0.5 - min(mapProcess(minDomain: 0, maxDomain: 0.25, value: process), 0.25) , to: 0.5)
-                            .glow(fill: Color.red, lineWidth: lineWidth)
-                            .rotationEffect(.degrees(0)) // Default orientation
-                    }
-                }
-            )
-    }
-}
-
-
-extension View where Self: Shape {
-  func glow(
-    fill: some ShapeStyle,
-    lineWidth: Double,
-    blurRadius: Double = 4.0,
-    lineCap: CGLineCap = .round
-  ) -> some View {
-    self
-      .stroke(style: StrokeStyle(lineWidth: lineWidth / 2, lineCap: lineCap))
-      .fill(fill)
-      .overlay {
-        self
-          .stroke(style: StrokeStyle(lineWidth: lineWidth, lineCap: lineCap))
-          .fill(fill)
-          .blur(radius: blurRadius)
-      }
-      .overlay {
-        self
-          .stroke(style: StrokeStyle(lineWidth: lineWidth, lineCap: lineCap))
-          .fill(fill)
-          .blur(radius: blurRadius / 2)
-      }
-  }
-}
-
-func mapProcess(minDomain:Double, maxDomain:Double, value:Double) -> Double {
-    return minDomain + (maxDomain - minDomain) * (value - 0) / (1 - 0)
-}
-
-struct DeviceRotationViewModifier: ViewModifier {
-    let action: (UIDeviceOrientation) -> Void
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear()
-            .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
-                action(UIDevice.current.orientation)
-            }
-    }
-}
-
-// A View wrapper to make the modifier easier to use
-extension View {
-    func onRotate(perform action: @escaping (UIDeviceOrientation) -> Void) -> some View {
-        self.modifier(DeviceRotationViewModifier(action: action))
-    }
 }

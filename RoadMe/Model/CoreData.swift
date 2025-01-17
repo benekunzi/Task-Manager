@@ -15,6 +15,7 @@ class CoreDataModel: ObservableObject {
     
     let container: NSPersistentContainer
     private var mappedEntities: Set<UUID> = []
+    private let themeManager: ThemeManager = ThemeManager()
 
     init() {
         self.container = NSPersistentContainer(name: "ProjectContainer")
@@ -40,7 +41,7 @@ class CoreDataModel: ObservableObject {
         return savedEntities
     }
     
-    func addRootTask(task: ProjectTask) -> [ProjectTask] {
+    func addRootTask(task: ProjectTask, themeId: UUID) -> [ProjectTask] {
         // Create the new root task entity
         let taskEntity = ProjectTaskEntity(context: container.viewContext)
         taskEntity.id = task.id
@@ -51,6 +52,7 @@ class CoreDataModel: ObservableObject {
         taskEntity.process = task.process
         taskEntity.parentTaskID = nil // Explicitly set as a root-level task
         taskEntity.color = task.color
+        taskEntity.themeID = themeId
         
         if let coverImage = task.coverImage {
             taskEntity.coverImage = coverImage.pngData()
@@ -306,6 +308,12 @@ class CoreDataModel: ObservableObject {
         }
         if let parentTaskId = entity.parentTaskID {
             projectTask.parentTaskId = parentTaskId
+        }
+        if let selectedThemeId = entity.themeID {
+            let theme = self.themeManager.themes.first(where: { $0.id == selectedThemeId})
+            if let theme = theme {
+                projectTask.theme = theme
+            }
         }
         
         return projectTask

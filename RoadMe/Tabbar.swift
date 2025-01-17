@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-var Tabs = ["house", "person"]
+var Tabs = ["house", "cart", "person"]
 
 struct TabBarView: View {
     
@@ -21,18 +21,19 @@ struct TabBarView: View {
                 
                 TabBarImageView(selectedTab: self.$selectedTab,
                                 tab: tab)
-                .frame(width: 25, height: 25)
                 .padding(.horizontal, 30)
+                .padding(.vertical, 7)
                 
                 if tab != Tabs.last {
                     Spacer(minLength: 0)
                 }
             }
         }
+        .padding(.top, 10)
         .padding(.horizontal, 30)
-        .padding(.vertical)
         .padding(.bottom, self.bottomPadding)
-        .background(Color.white.clipShape(CustomShape()).cornerRadius(12))
+        .background(Color("BackgroundColor"))
+        .overlay(Rectangle().stroke(Color.gray, lineWidth: 2))
     }
     
     private var bottomPadding: CGFloat {
@@ -52,12 +53,13 @@ struct TabBarImageView : View {
     @State var didUpdateOnStartUp: Bool = false
     
     var body: some View {
-        Image(systemName: tab + ".fill")
+        Image(systemName: tab)
             .resizable ()
             .renderingMode(.template)
+            .font(.system(.body).weight(.bold))
             .aspectRatio(contentMode: .fit)
             .frame(width: 25, height: 25)
-            .foregroundColor(selectedTab == tab ? Color("BackgroundColor") : Color.gray)
+            .foregroundColor(selectedTab == tab ? Color.black : Color.gray)
 //            .padding(selectedTab == tab ? 15 : 0)
 //            .background(Color.white.opacity(selectedTab == tab ? 1 : 0).clipShape(Circle()))
 //            .offset(x: geo.frame(in: .global).minX - geo.frame(in: .global).midX,

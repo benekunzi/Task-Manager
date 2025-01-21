@@ -15,7 +15,7 @@ class ProjectModel: ObservableObject {
         name: "Default-Task-ID",
         description: "Default-Task-Description",
         subtasks: [],
-        color: "BlushPink",
+        color: "",
         isCompleted: false)
     @Published var selectedProject: ProjectTask?
     @Published var draggedTask: ProjectTask?
@@ -27,7 +27,8 @@ class ProjectModel: ObservableObject {
     @Published var showEditTaskEditor: Bool = false
     @Published var taskToEdit: ProjectTask?
     @Published var deviceType: DeviceType = .iPhone
-    @Published var selectedTheme: Theme = themeMountain
+    @Published var selectedTheme: Theme = themeBasis
+    @Published var redrawID: UUID = UUID()
     
     init() {
         self.deviceType = UIDevice.current.userInterfaceIdiom == .phone ? .iPhone : UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .Mac
@@ -41,7 +42,7 @@ class ProjectModel: ObservableObject {
         name: "Default-Task-ID",
         description: "Default-Task-Description",
         subtasks: [],
-        color: "BlushPink",
+        color: "",
         isCompleted: false)
     
     func changeSelectedTask(task: ProjectTask) {
@@ -55,9 +56,6 @@ class ProjectModel: ObservableObject {
     }
 
     func updateFilteredTasks() {
-        for task in selectedTask.subtasks {
-            print("\(task.name): \(task.isCompleted)")
-        }
         if let updatedTasks = findTask(in: self.projectsTasks, withID: selectedTask.id) {
             if self.showHiddenTasks {
                 self.filteredTasks = updatedTasks.subtasks
@@ -76,6 +74,7 @@ class ProjectModel: ObservableObject {
     
     func toggleUIUpdate() {
         self.updateUI.toggle()
+        self.redrawID = UUID()
     }
 }
 

@@ -11,78 +11,58 @@ struct TaskCard: View {
     @ObservedObject var task: ProjectTask
     @Binding var showMoreOptions: Bool
     @Binding var isWiggling: Bool
-    @Binding var taskCardWidth: CGFloat
     @Binding var numberOfColumns: Int
+    @Binding var scale: CGFloat
     
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
     
-    @State private var orientation = UIDeviceOrientation.unknown
     @State private var isTapped: Bool = false
     @State private var isPressed: Bool = false
     
     var body: some View {
-        ZStack {
-            
-            TaskCardContentView(task: task, numberOfColumns: $numberOfColumns)
-            
-            VStack {
-                HStack(alignment: .top) {
-                    Spacer()
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(Color("LightGray"))
-                        .font(.system(size: 16).weight(.bold))
-                        .onTapGesture {
-                            projectModel.taskToEdit = task
-                            self.projectModel.showEditTaskEditor.toggle()
-                        }
-                }
-                Spacer()
+        TaskCardContentView(task: task, numberOfColumns: $numberOfColumns, scale: $scale)
+            .background(
+                RoundedRectangle(cornerRadius: 10 * scale)
+                    .fill(Color.white)
+                    .shadow(color: Color("LightGray"), radius: 2, x: 0, y: 2)
+            )
+            .frame(height: 150 * scale)
+            .onTapGesture(count: 1) {
+                print("Tap Gesture. \(Date().timeIntervalSince1970)")
+                self.isTapped = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
+                    if (!showMoreOptions) {
+                        task.parentTaskId = self.projectModel.selectedTask.id
+                        self.projectModel.changeSelectedTask(task: task)
+                    } else {
+                        showMoreOptions = false
+                    }
+                    isTapped = false
+                })
             }
-        }
-        .modifier(ChunkyButtonModifier(isTap: $isTapped, color: $task.color))
-        .frame(height: CardSHeightLookUp.getCardHeight(for: numberOfColumns, deviceType: projectModel.deviceType, orientation: orientation))
-        .onTapGesture(count: 1) {
-            print("Tap Gesture. \(Date().timeIntervalSince1970)")
-            self.isTapped = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: {
-                if (!showMoreOptions) {
-                    task.parentTaskId = self.projectModel.selectedTask.id
-                    self.projectModel.changeSelectedTask(task: task)
-                } else {
-                    showMoreOptions = false
-                }
-                isTapped = false
-            })
-        }
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.5)
-                .onEnded() { value in
-                    print("LongPressGesture started. \(Date().timeIntervalSince1970)")
-                    self.isTapped = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
-                        if (!showMoreOptions) {
-                            showMoreOptions = true
+            .simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.5)
+                    .onEnded() { value in
+                        print("LongPressGesture started. \(Date().timeIntervalSince1970)")
+                        self.isTapped = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: {
+                            if (!showMoreOptions) {
+                                showMoreOptions = true
+                                self.isTapped = false
+                            }
+                        })
+                    }
+                    .sequenced(before:TapGesture(count: 1)
+                        .onEnded {
+                            print("LongPressGesture ended. \(Date().timeIntervalSince1970)")
                             self.isTapped = false
                         }
-                    })
-                }
-                .sequenced(before:TapGesture(count: 1)
-                .onEnded {
-                    print("LongPressGesture ended. \(Date().timeIntervalSince1970)")
-                    self.isTapped = false
-                }
+                    )
             )
-        )
-//            .overlay(
-//                RoundedRectangle(cornerRadius: 20, style: .continuous)
-//                    .stroke(Color.gray.opacity(0.2), lineWidth: 1))
             .overlay(
                 TaskOptionOverlayView(showMoreOptions: $showMoreOptions, task: task)
             )
-            .onRotate { newOrientation in
-                orientation = newOrientation
-            }
             .rotationEffect(.degrees(isWiggling ? 2.5 : 0))
             .rotation3DEffect(.degrees(0), axis: (x: 0, y: -5, z: 0))
             .animation(
@@ -93,153 +73,96 @@ struct TaskCard: View {
             )
     }
 }
-
+    
 struct TaskCardContentView: View {
     
     @ObservedObject var task: ProjectTask
     @Binding var numberOfColumns: Int
+    @Binding var scale: CGFloat
     
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
+    @EnvironmentObject var themeManager: ThemeManager
+    
+    @State private var orientation = UIDeviceOrientation.unknown
+    private let taskNameSize: CGFloat = 16
+    private let taskDescriptionSize: CGFloat = 14
+    private let subtaskNameSize: CGFloat = 12
+    private let checkBoxSize: CGFloat = 22
+    private let subtaskCheckBoxSize: CGFloat = 14
+    private let infoButtonSize: CGFloat = 18
+    private let taskCounterSize: CGFloat = 12
+    private let horizontalPadding: CGFloat = 20
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                Image(systemName: task.isCompleted ? "checkmark.circle" : "circle")
-                    .font(.system(size: 14).weight(.bold))
-                    .foregroundStyle(Color("LightGray"))
-                    .onTapGesture {
-                        projectModel.updateCompleteStatus(task: task)
-                        coreDataModel.updateIsCompleted(taskID: task.id, isCompleted: task.isCompleted)
-                        _ = projectModel.projectsTasks.first(where: { $0.id == projectModel.selectedProject!.id })!.calculateProcess()
+        ZStack {
+            VStack(alignment: .center, spacing: 0) {
+                HStack(alignment: .top, spacing: 10*scale) {
+                    Image(systemName: task.isCompleted ? "circle.fill" : "circle")
+                        .font(.system(size: checkBoxSize * scale).weight(.regular))
+                        .foregroundStyle(Color(themeManager.currentTheme.colors[task.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary))
+                        .onTapGesture {
+                            projectModel.updateCompleteStatus(task: task)
+                            coreDataModel.updateIsCompleted(taskID: task.id, isCompleted: task.isCompleted)
+                            _ = projectModel.projectsTasks.first(where: { $0.id == projectModel.selectedProject!.id })!.calculateProcess()
+                        }
+                    VStack(alignment: .leading, spacing: 4 * scale) {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 2 * scale) {
+                                Text(task.name)
+                                    .lineLimit(1)
+                                    .font(.custom("Inter-Regular_SemiBold", size: taskNameSize * scale))
+                                    .foregroundStyle(Color.black)
+                                if (task.description != "") {
+                                    Text(task.description)
+                                        .font(.custom("Inter-Regular_Medium", size: taskDescriptionSize * scale))
+                                        .foregroundStyle(Color("Gray"))
+                                        .lineLimit(1)
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: "info.circle.fill")
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(Color(themeManager.currentTheme.colors[task.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary), Color(themeManager.currentTheme.colors[task.color]?.secondary ?? themeManager.currentTheme.colors["green"]!.secondary))
+                                .font(.system(size: infoButtonSize * scale).weight(.bold))
+                                .onTapGesture {
+                                    projectModel.taskToEdit = task
+                                    self.projectModel.showEditTaskEditor.toggle()
+                                }
+                        }
+                        HStack {
+                            Spacer()
+                            if (task.subtasks.count > 0) {
+                                Text("\(task.subtasks.filter(\.isCompleted).count)/\(task.subtasks.count)")
+                                    .font(.custom("Inter-Regular_Medium", size: taskCounterSize * scale))
+                                    .foregroundStyle(Color("Gray"))
+                            }
+                        }
+                        VStack(alignment: .leading, spacing: 4 * scale) {
+                            ForEach(task.subtasks.filter({$0.isCompleted == false}).prefix(3)) { subtask in
+                                HStack(alignment: .center, spacing: 8 * scale) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .strokeBorder(Color("LightGray"), lineWidth: 1)
+                                        .frame(width: subtaskCheckBoxSize * scale,
+                                               height: subtaskCheckBoxSize * scale)
+                                    Text(subtask.name)
+                                        .font(.custom("Inter-Regular_Medium", size: subtaskNameSize * scale))
+                                        .foregroundStyle(Color.black)
+                                    Spacer()
+                                }
+                            }
+                        }
                     }
-                Text(task.name)
-                    .lineLimit(1)
-                    .font(.system(
-                        size: TextSizeLookup.getFontSize(
-                            for: numberOfColumns,
-                            deviceType: projectModel.deviceType,
-                            orientation: .vertical,
-                            textType: .title)).weight(.bold))
+                }
                 Spacer()
             }
-            Text(task.description)
-                .font(.system(size:
-                                TextSizeLookup.getFontSize(
-                                    for: numberOfColumns,
-                                    deviceType: projectModel.deviceType,
-                                    orientation: .vertical,
-                                    textType: .description)).weight(.semibold))
-                .lineLimit(1)
-                .foregroundStyle(Color("LightGray"))
-            HStack {
-                Spacer()
-                Text("\(task.subtasks.filter(\.isCompleted).count)/\(task.subtasks.count)")
-            }
-            .font(.system(size:
-                            TextSizeLookup.getFontSize(
-                                for: numberOfColumns,
-                                deviceType: projectModel.deviceType,
-                                orientation: .vertical,
-                                textType: .description)).weight(.semibold))
-            .foregroundStyle(Color("LightGray"))
-            Spacer()
-            VStack(alignment: .leading) {
-                ForEach(task.subtasks.filter({$0.isCompleted == false}).prefix(3)) { subtask in
-                    HStack {
-                        Image(systemName: "circle.fill")
-                            .font(.system(size: 6))
-                        Text(subtask.name)
-                            .font(.system(size:
-                                            TextSizeLookup.getFontSize(
-                                                for: numberOfColumns,
-                                                deviceType: projectModel.deviceType,
-                                                orientation: .vertical,
-                                                textType: .subtask)).weight(.semibold))
-                        Spacer()
-                    }
-                }
-            }
-        }.frame(maxWidth: .infinity)
-    }
-}
-
-struct ChunkyButtonModifier: ViewModifier {
-    
-    @Binding var isTap: Bool
-    @Binding var color: String
-    
-    func body(content: Content) -> some View {
-        content
-            .padding()
-            .background(
-                ZStack {
-                    // Background shadow for 3D effect
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .strokeBorder(.black, lineWidth: 0)
-                        .background(ZStack {
-                            RoundedRectangle(cornerRadius: 15, style: .continuous).fill(.black)
-                            RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color(color).opacity(0.5))
-                        })
-                        .offset(y: isTap ? 0 : 5)
-                        .animation(.easeInOut(duration: 0.1), value: isTap) // Animation for shadow
-                    // Foreground button
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .strokeBorder(.black, lineWidth: 0)
-                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color(color)))
-                }
-            )
-            .offset(y: isTap ? 5 : 0) // Button movement animation
-            .animation(.easeInOut(duration: 0.1), value: isTap) // Smooth animation
-    }
-}
-
-struct WelcomeChunkyButton: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(
-                ZStack {
-                    // Background shadow for 3D effect
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .strokeBorder(.black, lineWidth: 0)
-                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color("Theme-1-VeryDarkGreen")))
-                        .offset(y: configuration.isPressed ? 0 : 5)
-                        .animation(.easeInOut(duration: 0.1), value: configuration.isPressed) // Animation for shadow
-                    // Foreground button
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .strokeBorder(.black, lineWidth: 0)
-                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(.white))
-                }
-            )
-            .onChange(of: configuration.isPressed) { _ in print("changed")}
-            .offset(y: configuration.isPressed ? 5 : 0) // Button movement animation
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed) // Smooth animation
-        
-    }
-}
-
-struct WelcomeChunkyButtonModifier: ViewModifier {
-    
-    @Binding var isTap: Bool
-    
-    func body(content: Content) -> some View {
-        content
-            .background(
-                ZStack {
-                    // Background shadow for 3D effect
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .strokeBorder(.black, lineWidth: 0)
-                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(Color("Theme-1-VeryDarkGreen")))
-                        .offset(y: isTap ? 0 : 5)
-                        .animation(.easeInOut(duration: 0.1), value: isTap) // Animation for shadow
-                    // Foreground button
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .strokeBorder(.black, lineWidth: 0)
-                        .background(RoundedRectangle(cornerRadius: 15, style: .continuous).fill(.white))
-                }
-            )
-            .offset(y: isTap ? 5 : 0) // Button movement animation
-            .animation(.easeInOut(duration: 0.1), value: isTap) // Smooth animation
+        }
+        .padding(.horizontal, self.horizontalPadding * scale)
+        .padding(.top, 10 * scale)
+        .frame(maxWidth: .infinity)
+        .onRotate { newOrientation in
+            orientation = newOrientation
+        }
     }
 }
 

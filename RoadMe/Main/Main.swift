@@ -11,6 +11,7 @@ struct MainView: View {
     @ObservedObject var task: ProjectTask
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
+    @EnvironmentObject var themeManager: ThemeManager
     
     @State var navigationTitle: String = ""
     @State var isWiggling: Bool = false
@@ -18,6 +19,7 @@ struct MainView: View {
     @State private var cardPositions: [UUID: CGPoint] = [:]
     @State var columns: [GridItem] = [GridItem(.flexible())]
     @State var numberOfColumns: Int = 1
+    @State private var projectTasks: [ProjectTask] = []
     
     @Environment(\.dismiss) var dismiss
     
@@ -42,20 +44,25 @@ struct MainView: View {
             
             VStack {
                 Spacer()
-                HStack {
-                    Image(systemName: "plus")
-                        .font(.system(size: 20).weight(.bold))
-                        .padding(5)
-                        .background(Color("Theme-1-VeryDarkGreen"))
-                        .foregroundStyle(Color.white)
-                        .clipShape(Circle())
-                        .onTapGesture {
-                            if (projectModel.selectedProject == projectModel.default_Project) {
-                                projectModel.showProjectEditor.toggle()
-                            } else {
-                                projectModel.showTaskEditor.toggle()
-                            }
+                HStack(alignment: .center) {
+                    HStack(alignment: .center, spacing: 10) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20).weight(.bold))
+                            .padding(5)
+                            .background(Color(themeManager.currentTheme.colors["green"]!.secondary))
+                            .foregroundStyle(Color(themeManager.currentTheme.colors["green"]!.primary))
+                            .clipShape(Circle())
+                        Text("New Task")
+                            .font(.custom("Inter-Regular_SemiBold", size: 16))
+                            .foregroundStyle(Color(themeManager.currentTheme.colors["green"]!.primary))
+                    }
+                    .onTapGesture {
+                        if (projectModel.selectedProject == projectModel.default_Project) {
+                            projectModel.showProjectEditor.toggle()
+                        } else {
+                            projectModel.showTaskEditor.toggle()
                         }
+                    }
                     Spacer()
                 }
             }
@@ -64,9 +71,7 @@ struct MainView: View {
         }
         .frame(maxWidth: .infinity)
         .background(
-            Image("Theme-1")
-            .resizable()
-            .aspectRatio(contentMode: .fill)
+            Color("BackgroundColor")
             .edgesIgnoringSafeArea(.all))
         .onTapGesture {
             if (showMoreOptions) {
@@ -83,7 +88,7 @@ struct MainView: View {
                         let currentTask = self.projectModel.selectedTask
                         withAnimation(.spring(duration: 0.25)) {
                             if let parentId = currentTask.parentTaskId {
-                                if let parentTask = findTask(in: projectModel.projectsTasks, withID: parentId) {
+                                if let parentTask = findTask(in: self.projectTasks, withID: parentId) {
                                     self.projectModel.changeSelectedTask(task: parentTask)
                                     print("\(parentTask.name): \(parentTask.subtasks)")
                                     self.isWiggling = false
@@ -98,7 +103,7 @@ struct MainView: View {
                         }
                     } label: {
                         Image(systemName: "chevron.backward")
-                            .font(.system(.body).weight(.bold))
+                            .font(.system(size: 16).weight(.bold))
                             .foregroundColor(Color.black)
                     }
                 }
@@ -106,15 +111,19 @@ struct MainView: View {
             
             ToolbarItem(placement: .principal) {
                 Text(navigationTitle)
-                    .font(.system(.body).weight(.bold))
+                    .font(.custom("Inter-Regular_Bold", size: 16))
                     .foregroundColor(Color.black)
             }
             
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Menu {
                     Button {
-                        self.columns.append(GridItem(.flexible()))
-                        self.numberOfColumns += 1
+#if os(iOS)
+                        if (self.numberOfColumns < 3) {
+                            self.columns.append(GridItem(.flexible()))
+                            self.numberOfColumns += 1
+                        }
+#endif
                     } label: {
                         Text("Grid verkleinern")
                     }
@@ -128,7 +137,7 @@ struct MainView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
-                        .font(.system(.body).weight(.bold))
+                        .font(.system(size: 16).weight(.bold))
                         .foregroundColor(Color.black)
                 }
             }
@@ -136,11 +145,17 @@ struct MainView: View {
         .onChange(of: self.projectModel.selectedTask) { task in
             self.navigationTitle = task.name
         }
+        .onChange(of: projectModel.updateUI) { _ in
+            self.projectTasks = self.projectModel.projectsTasks
+        }
+        .onAppear {
+            self.projectTasks = self.projectModel.projectsTasks
+        }
         .onAppear {
             self.projectModel.changeSelectedTask(task: task)
             self.navigationTitle = task.name
             self.projectModel.selectedProject = task
-            self.projectModel.selectedTheme = task.theme ?? themeMountain
+            self.projectModel.selectedTheme = task.theme ?? themeBasis
         }
         .edgesIgnoringSafeArea(.bottom)
     }

@@ -19,21 +19,16 @@ struct MainContentView: View {
     @Binding var numberOfColumns: Int
     
     @State var size: CGSize = .zero
-    @State var taskCardWidth: CGFloat = 0
+    @State var scale: CGFloat = 1
     
     var body: some View {
         LazyVGrid(columns: self.columns, spacing: 20) {
-            ForEach(projectModel.filteredTasks, id: \.id) { task in
+            ForEach(projectModel.selectedTask.subtasks, id: \.id) { task in
                 TaskCard(task: task,
                          showMoreOptions: $showMoreOptions,
                          isWiggling: $isWiggling,
-                         taskCardWidth: $taskCardWidth,
-                         numberOfColumns: $numberOfColumns)
-                .padding(.horizontal, numberOfColumns == 1 ? 20 : 0)
-                .readWidth {
-                    taskCardWidth = $0
-                }
-                // Conditionally apply `onDrag` and `onDrop`
+                         numberOfColumns: $numberOfColumns,
+                         scale: $scale)
                 .if(showMoreOptions) { view in
                     view
                         .onDrag {
@@ -48,21 +43,44 @@ struct MainContentView: View {
                         )
                 }
             }
-        }.padding(.horizontal)
-        .onChange(of: projectModel.filteredTasks) {tasks in
-            if tasks.count == 0 {
+        }.id(projectModel.redrawID)
+        .padding(.horizontal)
+        .onChange(of: projectModel.filteredTasks) { tasks in
+            if tasks.isEmpty {
                 showMoreOptions = false
                 isWiggling = false
             }
             
-            for task in tasks {
-                let newIndex = tasks.firstIndex(where: { $0.id == task.id }) ?? Int(task.index)
-                task.index = Int32(newIndex)
-                coreDataModel.updateIndex(taskID: task.id, index: Int32(newIndex))
+            for (idx, task) in tasks.enumerated() {
+                if idx == tasks.endIndex - 1 {
+                    let newIndex = tasks.firstIndex(where: { $0.id == task.id }) ?? Int(task.index)
+                    task.index = Int32(newIndex)
+                    projectModel.projectsTasks = coreDataModel.updateIndex(taskID: task.id, index: Int32(newIndex))
+                    if let updatedTask = findTask(in: projectModel.projectsTasks, withID: projectModel.selectedTask.id) {
+                        projectModel.changeSelectedTask(task: updatedTask)
+                    } else {
+                        print("task wasn't found")
+                        projectModel.changeSelectedTask(task: projectModel.default_Project)
+                    }
+                } else {
+                    let newIndex = tasks.firstIndex(where: { $0.id == task.id }) ?? Int(task.index)
+                    task.index = Int32(newIndex)
+                    _ = coreDataModel.updateIndex(taskID: task.id, index: Int32(newIndex))
+                }
+            }
+        }
+        .onChange(of: self.numberOfColumns) { newValue in
+            if newValue == 1 {
+                self.scale = 1.0
+            } else if newValue == 2 {
+                self.scale = 0.75
+            } else if newValue == 3 {
+                self.scale = 0.5
             }
         }
     }
 }
+
 
 extension View {
   func readWidth(onChange: @escaping (CGFloat) -> Void) -> some View {

@@ -6,32 +6,33 @@
 //
 
 import SwiftUI
+import WrappingStack
 
 struct CreateProjectView: View {
     
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
+    @EnvironmentObject var themeManager: ThemeManager
     
-    @State private var selectedImage: UIImage?
-    @State private var inputImage: UIImage?
     @StateObject var newProject: ProjectTask = ProjectTask(
         id: UUID(),
         name: "",
         description: "",
         subtasks: [],
-        color: "BlushPink",
+        color: "",
         isCompleted: false)
-    @ObservedObject var themeManager: ThemeManager = ThemeManager()
+    @State var selectedColor: String = "green"
+    @State var selectedTag: String = ""
+    @State var newTag: String = ""
+    @State var tags: [String] = []
     
     var body: some View {
         VStack {
             VStack(alignment: .leading, spacing: 0) {
                 HStack() {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16).weight(.bold))
-                        .padding(5)
-                        .foregroundStyle(Color("LightGray"))
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                    Text("Cancel")
+                        .font(.custom("Inter-Regular_Medium", size: 16))
+                        .foregroundStyle(Color.black)
                         .onTapGesture {projectModel.showProjectEditor = false}
                     
                     Spacer()
@@ -43,38 +44,109 @@ struct CreateProjectView: View {
 
                 VStack(alignment: .leading, spacing: 25) {
                     CardTopView(newTask: newProject)
-                    
+            
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Themes")
-                            .font(.system(size: 20).weight(.bold))
-                        ScrollView(.horizontal) {
-                            HStack {
-                                ForEach(themeManager.themes) {theme in
-                                    theme.backgroundImage
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 150, height: 100)
-                                        .clipShape(RoundedRectangle(cornerRadius: 15))
-                                }
-                            }
-                        }
-                    }
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Project Color Palette")
-                            .font(.system(size: 20).weight(.bold))
+                        Text("Main Project Color")
+                            .font(.custom("Inter-Regular_Medium", size: 18))
+                            .foregroundStyle(Color.black)
+//                            .foregroundStyle(newProject.color == "" ? Color.black : Color(themeManager.currentTheme.colors[selectedColor]!.primary))
                         ScrollView(.horizontal) {
                             HStack(spacing: 15) {
-                                ForEach(themeManager.currentTheme.colorPalette, id:\.self) { c in
-                                    Circle()
-                                        .strokeBorder(.gray, lineWidth: 1)
-                                        .background(Circle().fill(Color(c)))
-                                        .frame(width: 35, height: 35)
-                                }
+                                let green = projectModel.selectedTheme.colors["green"]!.primary
+                                let blue = projectModel.selectedTheme.colors["blue"]!.primary
+                                let purple = projectModel.selectedTheme.colors["purple"]!.primary
+                                Circle()
+                                    .strokeBorder(.gray, lineWidth: 1)
+                                    .background(Circle().fill(Color(green)))
+                                    .frame(width: 35, height: 35)
+                                    .onTapGesture {
+                                        self.selectedColor = "green"
+                                    }
+                                Circle()
+                                    .strokeBorder(.gray, lineWidth: 1)
+                                    .background(Circle().fill(Color(blue)))
+                                    .frame(width: 35, height: 35)
+                                    .onTapGesture {
+                                        self.selectedColor = "blue"
+                                    }
+                                Circle()
+                                    .strokeBorder(.gray, lineWidth: 1)
+                                    .background(Circle().fill(Color(purple)))
+                                    .frame(width: 35, height: 35)
+                                    .onTapGesture {
+                                        self.selectedColor = "purple"
+                                    }
                             }
                         }
                     }
-                    Text("Project Icons")
-                        .font(.system(size: 20).weight(.bold))
+                    Text("Project Icon")
+                        .font(.custom("Inter-Regular_Medium", size: 18))
+                        .foregroundStyle(Color.black)
+//                        .foregroundStyle(newProject.color == "" ? Color.black : Color(themeManager.currentTheme.colors[selectedColor]!.primary))
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Tag hinzufügen")
+                            .font(.custom("Inter-Regular_Medium", size: 18))
+                        WrappingHStack(id: \.self, horizontalSpacing: 20, verticalSpacing: 20) {
+                            ForEach(tags, id: \.self) { tag in
+                                Text(tag)
+                                    .font(.custom("Inter-Regular_SemiBold", size: 16))
+                                    .foregroundStyle(selectedTag == tag ? Color(themeManager.currentTheme.colors[selectedColor]!.primary) : Color("LightGray"))
+                                    .padding(4)
+                                    .padding(.horizontal, 2)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(selectedTag == tag ? Color(themeManager.currentTheme.colors[selectedColor]!.secondary) : Color("Gray"))
+                                    )
+                                    .onTapGesture {
+                                        withAnimation(.spring()) {
+                                            if self.selectedTag == tag {
+                                                self.selectedTag = ""
+                                            } else {
+                                                self.selectedTag = tag
+                                            }
+                                        }
+                                    }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 20)
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+                        HStack {
+                            TextField("Add new tag",
+                                      text: $newTag)
+                            .font(.custom("Inter-Regular_Medium", size: 16))
+                            .foregroundStyle(Color.black)
+                            .autocorrectionDisabled()
+                            
+                            Button {
+                                if !newTag.isEmpty {
+                                    var currentTags = self.tags
+                                    currentTags.append(newTag)
+                                    print(currentTags)
+                                    let status = self.coreDataModel.saveTags(tags: currentTags)
+                                    if (status) {
+                                        self.tags.append(newTag)
+                                        self.newTag = ""
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Text("Add Tag")
+                                }
+                                .font(.custom("Inter-Regular", size: 16))
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color(themeManager.currentTheme.colors[selectedColor]!.secondary))
+                                )
+                                .foregroundStyle(Color(themeManager.currentTheme.colors[selectedColor]!.primary))
+                            }
+
+                        }
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+                    }
                     Spacer()
                 }
                 .padding()
@@ -83,13 +155,15 @@ struct CreateProjectView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("BackgroundColor"))
         .foregroundStyle(Color("TextColor"))
-        .onChange(of: inputImage) { _ in loadImage() }
         .edgesIgnoringSafeArea(.top)
-    }
-    
-    func loadImage() {
-        guard let inputImage = inputImage else { return }
-        newProject.coverImage = inputImage
+        .onAppear {
+            self.selectedColor = "green"
+            newProject.color = "green"
+            self.tags = self.coreDataModel.tags
+        }
+        .onChange(of: self.selectedColor) { newValue in
+            newProject.color = newValue
+        }
     }
 }
 
@@ -116,28 +190,20 @@ struct CreateProjectButtonView: View {
         Button {
             if newProject.name != "" {
                 let mappedProjects = self.coreDataModel.addRootTask(task: newProject,
-                                                                    themeId: self.themeManager.currentTheme.id)
+                                                                    themeId: themeManager.currentTheme.id)
                 self.projectModel.toggleUIUpdate()
                 self.projectModel.projectsTasks = mappedProjects
-                self.projectModel.selectedTask = newProject
-                self.projectModel.selectedTheme = self.themeManager.currentTheme
                 self.projectModel.showProjectEditor = false
             }
         } label: {
             if newProject.name != "" {
-                Text("Create Project")
-                    .font(.system(size: 16).weight(.bold))
-                    .foregroundColor(Color("LightGray"))
-                    .padding(5)
-                    .padding(.horizontal, 3)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                Text("Done")
+                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .foregroundStyle(Color.black)
             } else {
-                Text("Create Project")
-                    .font(.system(size: 16).weight(.bold))
-                    .foregroundColor(Color.gray)
-                    .padding(5)
-                    .padding(.horizontal, 3)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                Text("Done")
+                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .foregroundStyle(Color("Gray"))
             }
         }
     }

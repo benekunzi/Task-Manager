@@ -1,7 +1,8 @@
 import Foundation
+import UIKit
 
 struct TextSizeLookup {
-    static func getFontSize(for numberOfColumns: Int, deviceType: DeviceType, orientation: Orientation, textType: TextType) -> CGFloat {
+    static func getFontSize(for numberOfColumns: Int, deviceType: DeviceType, orientation: UIDeviceOrientation, textType: TextType) -> CGFloat {
         switch deviceType {
         case .iPhone:
             return iPhoneFontSize(for: numberOfColumns, orientation: orientation, textType: textType)
@@ -12,84 +13,148 @@ struct TextSizeLookup {
         }
     }
     
-    private static func iPhoneFontSize(for columns: Int, orientation: Orientation, textType: TextType) -> CGFloat {
+    private static func iPhoneFontSize(for columns: Int, orientation: UIDeviceOrientation, textType: TextType) -> CGFloat {
         switch columns {
         case 1:
             switch textType {
-            case .title:
-                return orientation == .vertical ? 22 : 20
+            case .name:
+                return orientation == .portrait ? 16 : 16
             case .description:
-                return orientation == .vertical ? 14 : 13
+                return orientation == .portrait ? 14 : 14
             case .subtask:
-                return orientation == .vertical ? 12 : 11
+                return orientation == .portrait ? 12 : 12
+            case .checkBox:
+                return orientation == .portrait ? 22 : 22
+            case .subtaskCheckBox:
+                return orientation == .portrait ? 14 : 14
+            case .infoButton:
+                return orientation == .portrait ? 18 : 18
+            case .taskCounter:
+                return orientation == .portrait ? 12 : 12
             }
         case 2:
             switch textType {
-            case .title:
-                return orientation == .vertical ? 18 : 17
+            case .name:
+                return orientation == .portrait ? 14 : 14
             case .description:
-                return orientation == .vertical ? 12 : 11
+                return orientation == .portrait ? 12 : 12
             case .subtask:
-                return orientation == .vertical ? 10 : 9
+                return orientation == .portrait ? 10 : 10
+            case .checkBox:
+                return orientation == .portrait ? 18 : 18
+            case .subtaskCheckBox:
+                return orientation == .portrait ? 14 : 14
+            case .infoButton:
+                return orientation == .portrait ? 16: 16
+            case .taskCounter:
+                return orientation == .portrait ? 10 : 10
             }
         case 3:
             switch textType {
-            case .title:
-                return orientation == .vertical ? 16 : 15
+            case .name:
+                return orientation == .portrait ? 10 : 10
             case .description:
-                return orientation == .vertical ? 10 : 9
+                return orientation == .portrait ? 8 : 8
             case .subtask:
-                return orientation == .vertical ? 8 : 7
+                return orientation == .portrait ? 6 : 6
+            case .checkBox:
+                return orientation == .portrait ? 14 : 14
+            case .subtaskCheckBox:
+                return orientation == .portrait ? 10 : 10
+            case .infoButton:
+                return orientation == .portrait ? 14 : 14
+            case .taskCounter:
+                return orientation == .portrait ? 6 : 6
             }
         default:
             switch textType {
-            case .title:
-                return orientation == .vertical ? 14 : 13
+            case .name:
+                return orientation == .portrait ? 16 : 16
             case .description:
-                return orientation == .vertical ? 8 : 7
+                return orientation == .portrait ? 14 : 14
             case .subtask:
-                return orientation == .vertical ? 6 : 5
+                return orientation == .portrait ? 12 : 12
+            case .checkBox:
+                return orientation == .portrait ? 22 : 22
+            case .subtaskCheckBox:
+                return orientation == .portrait ? 16 : 16
+            case .infoButton:
+                return orientation == .portrait ? 18 : 18
+            case .taskCounter:
+                return orientation == .portrait ? 12 : 12
             }
         }
     }
     
-    private static func iPadFontSize(for columns: Int, orientation: Orientation, textType: TextType) -> CGFloat {
+    private static func iPadFontSize(for columns: Int, orientation: UIDeviceOrientation, textType: TextType) -> CGFloat {
         switch columns {
         case 1:
             switch textType {
-            case .title:
-                return orientation == .vertical ? 24 : 22
+            case .name:
+                return orientation == .portrait ? 16 : 16
             case .description:
-                return orientation == .vertical ? 18 : 16
+                return orientation == .portrait ? 14 : 14
             case .subtask:
-                return orientation == .vertical ? 12 : 10
+                return orientation == .portrait ? 12 : 12
+            case .checkBox:
+                return orientation == .portrait ? 22 : 22
+            case .subtaskCheckBox:
+                return orientation == .portrait ? 16 : 16
+            case .infoButton:
+                return orientation == .portrait ? 18 : 18
+            case .taskCounter:
+                return orientation == .portrait ? 12 : 12
             }
         case 2:
             switch textType {
-            case .title:
-                return orientation == .vertical ? 22 : 20
+            case .name:
+                return orientation == .portrait ? 16 : 16
             case .description:
-                return orientation == .vertical ? 16 : 14
+                return orientation == .portrait ? 14 : 14
             case .subtask:
-                return orientation == .vertical ? 10 : 9
+                return orientation == .portrait ? 12 : 12
+            case .checkBox:
+                return orientation == .portrait ? 22 : 22
+            case .subtaskCheckBox:
+                return orientation == .portrait ? 16 : 16
+            case .infoButton:
+                return orientation == .portrait ? 18 : 18
+            case .taskCounter:
+                return orientation == .portrait ? 12 : 12
             }
         case 3:
             switch textType {
-            case .title:
-                return orientation == .vertical ? 20 : 18
+            case .name:
+                return orientation == .portrait ? 16 : 16
             case .description:
-                return orientation == .vertical ? 14 : 12
+                return orientation == .portrait ? 14 : 14
             case .subtask:
-                return orientation == .vertical ? 8 : 7
+                return orientation == .portrait ? 12 : 12
+            case .checkBox:
+                return orientation == .portrait ? 22 : 22
+            case .subtaskCheckBox:
+                return orientation == .portrait ? 16 : 16
+            case .infoButton:
+                return orientation == .portrait ? 18 : 18
+            case .taskCounter:
+                return orientation == .portrait ? 12 : 12
             }
         default:
             switch textType {
-            case .title:
-                return orientation == .vertical ? 18 : 16
+            case .name:
+                return orientation == .portrait ? 18 : 16
             case .description:
-                return orientation == .vertical ? 12 : 10
+                return orientation == .portrait ? 12 : 10
             case .subtask:
-                return orientation == .vertical ? 8 : 6
+                return orientation == .portrait ? 8 : 6
+            case .checkBox:
+                return orientation == .portrait ? 12 : 10
+            case .subtaskCheckBox:
+                return orientation == .portrait ? 12 : 10
+            case .infoButton:
+                return orientation == .portrait ? 12 : 10
+            case .taskCounter:
+                return orientation == .portrait ? 12 : 10
             }
         }
     }
@@ -98,39 +163,71 @@ struct TextSizeLookup {
         switch columns {
         case 1:
             switch textType {
-            case .title:
+            case .name:
                 return 28
             case .description:
                 return 20
             case .subtask:
                 return 14
+            case .checkBox:
+                return 12
+            case .subtaskCheckBox:
+                return 12
+            case .infoButton:
+                return 12
+            case .taskCounter:
+                return 12
             }
         case 2:
             switch textType {
-            case .title:
+            case .name:
                 return 26
             case .description:
                 return 18
             case .subtask:
                 return 12
+            case .checkBox:
+                return 12
+            case .subtaskCheckBox:
+                return 12
+            case .infoButton:
+                return 12
+            case .taskCounter:
+                return 12
             }
         case 3:
             switch textType {
-            case .title:
+            case .name:
                 return 24
             case .description:
                 return 16
             case .subtask:
                 return 10
+            case .checkBox:
+                return 12
+            case .subtaskCheckBox:
+                return 12
+            case .infoButton:
+                return 12
+            case .taskCounter:
+                return 12
             }
         default:
             switch textType {
-            case .title:
+            case .name:
                 return 22
             case .description:
                 return 14
             case .subtask:
                 return 10
+            case .checkBox:
+                return 12
+            case .subtaskCheckBox:
+                return 12
+            case .infoButton:
+                return 12
+            case .taskCounter:
+                return 12
             }
         }
     }
@@ -140,10 +237,6 @@ enum DeviceType {
     case iPhone, iPad, Mac
 }
 
-enum Orientation {
-    case vertical, horizontal
-}
-
 enum TextType {
-    case title, description, subtask
+    case name, description, subtask, checkBox, subtaskCheckBox, infoButton, taskCounter
 }

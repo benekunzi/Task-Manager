@@ -10,65 +10,79 @@ import SwiftUI
 struct EditTaskEditor: View {
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
+    @EnvironmentObject var themeManager: ThemeManager
     
     @StateObject var lastTask: ProjectTask = ProjectTask(
         id: UUID(),
         name: "",
         description: "",
         subtasks: [],
-        color: "BlushPink",
+        color: "",
         isCompleted: false)
     
     var body: some View {
-        VStack {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack() {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16).weight(.bold))
-                        .padding(5)
-                        .foregroundStyle(Color("LightGray"))
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
-                        .onTapGesture {projectModel.showEditTaskEditor = false}
-                    
-                    Spacer()
-                    
-                    EditTaskButtonView(lastTask: lastTask)
-                }
-                .padding(.horizontal)
-                .padding(.top)
+        VStack(alignment: .leading, spacing: 24) {
+            HStack() {
+                Text("Cancel")
+                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .foregroundStyle(Color.black)
+                    .onTapGesture {projectModel.showEditTaskEditor = false}
+                
+                Spacer()
+                
+                EditTaskButtonView(lastTask: lastTask)
+            }
+            .padding(.horizontal)
+            .padding(.top)
 
-                VStack(alignment: .leading, spacing: 15) {
-                    CardTopView(newTask: lastTask)
-                    
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Card Color")
-                            .font(.system(size: 20).weight(.bold))
-                        ScrollView(.horizontal) {
-                            HStack {
-                                ForEach(self.projectModel.selectedTheme.colorPalette, id: \.self) {color in
-                                    Circle()
-                                        .strokeBorder(.gray, lineWidth: 1)
-                                        .background(Circle().fill(Color(color)))
-                                        .frame(width: 35, height: 35)
-                                        .onTapGesture {
-                                            lastTask.color = color
-                                        }
+            VStack(alignment: .leading, spacing: 24) {
+                CardTopView(newTask: lastTask)
+                
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Card Accent Color")
+                        .font(.custom("Inter-Regular_Medium", size: 18))
+                        .foregroundStyle(lastTask.color == "" ? Color.black : Color(themeManager.currentTheme.colors[lastTask.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary))
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 15) {
+                            let green = projectModel.selectedTheme.colors["green"]!.primary
+                            let blue = projectModel.selectedTheme.colors["blue"]!.primary
+                            let purple = projectModel.selectedTheme.colors["purple"]!.primary
+                            Circle()
+                                .strokeBorder(.gray, lineWidth: 1)
+                                .background(Circle().fill(Color(green)))
+                                .frame(width: 35, height: 35)
+                                .onTapGesture {
+                                    lastTask.color = "green"
                                 }
-                            }
+                            Circle()
+                                .strokeBorder(.gray, lineWidth: 1)
+                                .background(Circle().fill(Color(blue)))
+                                .frame(width: 35, height: 35)
+                                .onTapGesture {
+                                    lastTask.color = "blue"
+                                }
+                            Circle()
+                                .strokeBorder(.gray, lineWidth: 1)
+                                .background(Circle().fill(Color(purple)))
+                                .frame(width: 35, height: 35)
+                                .onTapGesture {
+                                    lastTask.color = "purple"
+                                }
                         }
                     }
-                    
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Task Icon")
-                            .font(.system(size: 20).weight(.bold))
-                    }
-                    Spacer()
                 }
-                .padding()
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Task Icon")
+                        .font(.custom("Inter-Regular_Medium", size: 18))
+                        .foregroundStyle(lastTask.color == "" ? Color.black : Color(themeManager.currentTheme.colors[lastTask.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary))
+                }
+                Spacer()
             }
+            .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(lastTask.color))
+        .background(Color("BackgroundColor"))
         .foregroundStyle(Color("TextColor"))
         .edgesIgnoringSafeArea(.top)
         .onAppear {
@@ -86,6 +100,7 @@ struct EditTaskEditor: View {
                 lastTask.parentTaskId = taskToEdit.parentTaskId
                 lastTask.coverImage = taskToEdit.coverImage
             }
+            print(lastTask.color)
         }
         .onDisappear {
             self.projectModel.taskToEdit = nil
@@ -107,7 +122,11 @@ struct EditTaskButtonView: View {
                     (lastTask.description != taskToEdit.description) ||
                     (lastTask.color != taskToEdit.color)) {
                     self.projectModel.projectsTasks = self.coreDataModel.updateTask(taskToEdit: lastTask)
-                    if let updatedTask = findTask(in: projectModel.projectsTasks, withID: lastTask.id) {
+                    if let updatedTask = findTask(in: projectModel.projectsTasks, withID: lastTask.parentTaskId!) {
+                        print("updated task in editor")
+                        for subtask in updatedTask.subtasks {
+                            print(subtask.color)
+                        }
                         projectModel.changeSelectedTask(task: updatedTask)
                         projectModel.showEditTaskEditor = false
                     } else {
@@ -119,19 +138,13 @@ struct EditTaskButtonView: View {
                 if ((lastTask.name != taskToEdit.name) ||
                     (lastTask.description != taskToEdit.description) ||
                     (lastTask.color != taskToEdit.color)) {
-                    Text("Update Project")
-                        .font(.system(size: 16).weight(.bold))
-                        .foregroundColor(Color("LightGray"))
-                        .padding(5)
-                        .padding(.horizontal, 3)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                    Text("Done")
+                        .font(.custom("Inter-Regular_Medium", size: 16))
+                        .foregroundStyle(Color.black)
                 } else {
-                    Text("Update Project")
-                        .font(.system(size: 16).weight(.bold))
-                        .foregroundColor(Color.gray)
-                        .padding(5)
-                        .padding(.horizontal, 3)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                    Text("Done")
+                        .font(.custom("Inter-Regular_Medium", size: 16))
+                        .foregroundStyle(Color("Gray"))
                 }
             }
         } else {

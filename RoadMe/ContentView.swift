@@ -11,6 +11,7 @@ import CoreData
 struct ContentView: View {
     @ObservedObject var projectModel: ProjectModel = ProjectModel()
     @ObservedObject var coreDataModel: CoreDataModel = CoreDataModel()
+    @ObservedObject var themeManager: ThemeManager = ThemeManager()
     
     @State var selectedTab = "house"
    
@@ -18,8 +19,10 @@ struct ContentView: View {
     
     init() {
         for familyName in UIFont.familyNames {
-            for fontName in UIFont.fontNames(forFamilyName: familyName) {
-                print("\(familyName): \(fontName)")
+            if familyName == "Inter" {
+                for fontName in UIFont.fontNames(forFamilyName: familyName) {
+                    print("\(familyName): \(fontName)")
+                }
             }
         }
     }
@@ -52,24 +55,6 @@ struct ContentView: View {
             }
             
             TabBarView(selectedTab: $selectedTab)
-//                .overlay(
-//                    HStack(alignment: .top) {
-//                        Spacer()
-//                        Image("Bee")
-//                            .resizable()
-//                            .aspectRatio(contentMode: .fit)
-//                            .frame(width: 50, height: 50)
-//                            .onTapGesture {
-//                                if self.projectModel.selectedTask == projectModel.default_Project {
-//                                    projectModel.showNameEditor.toggle()
-//                                } else {
-//                                    self.projectModel.showTaskEditor.toggle()
-//                                }
-//                            }
-//                        Spacer()
-//                    }
-//                        .offset(y: -45)
-//                )
         }
         .sheet(isPresented: self.$projectModel.showProjectEditor) {
             CreateProjectView()
@@ -84,12 +69,14 @@ struct ContentView: View {
         .preferredColorScheme(.light)
         .edgesIgnoringSafeArea(.all)
         .onAppear {
+            _ = coreDataModel.fetchTags()
             let mappedProjects = self.coreDataModel.mapToModel()
             self.projectModel.projectsTasks = mappedProjects
             self.projectModel.selectedTask = self.projectModel.default_Project
         }
         .environmentObject(self.projectModel)
         .environmentObject(self.coreDataModel)
+        .environmentObject(self.themeManager)
         .animation(.linear, value: self.projectModel.showTaskEditor)
         .animation(.linear, value: self.projectModel.showProjectEditor)
         .animation(.linear, value: self.projectModel.showEditTaskEditor)

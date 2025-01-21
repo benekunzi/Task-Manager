@@ -12,7 +12,7 @@ class ThemeManager: ObservableObject {
     @Published var themes: [Theme]
     
     init() {
-        let availableThemes: [Theme] = [themeMountain]
+        let availableThemes: [Theme] = [themeBasis]
         self.themes = availableThemes
         self.currentTheme = availableThemes.first! // Default to the first theme
     }
@@ -22,14 +22,11 @@ class ThemeManager: ObservableObject {
     }
 }
 
-let themeMountain = Theme (
-    backgroundImage: Image("Theme-1"),
-    colorPalette: [
-        "Theme-1-Green",
-        "Theme-1-GreenGray",
-        "Theme-1-LightGreenGray",
-        "Theme-1-Orange",
-        "Theme-1-VeryDarkGreen"
+let themeBasis = Theme(
+    colors: [
+        "green": ColorSet(primary: "Theme-1-Green-Primary", secondary: "Theme-1-Green-Secondary"),
+        "blue": ColorSet(primary: "Theme-1-Blue-Primary", secondary: "Theme-1-Blue-Secondary"),
+        "purple": ColorSet(primary: "Theme-1-Purple-Primary", secondary: "Theme-1-Purple-Secondary")
     ],
     icons: [
         "Theme-1-Icon1",
@@ -39,8 +36,12 @@ let themeMountain = Theme (
 )
 
 struct Theme: Identifiable {
-    let id = UUID() // Makes it Identifiable
-    let backgroundImage: Image
-    let colorPalette: [String]
+    let id = UUID()
+    let colors: [String: ColorSet] // Dictionary to map color names to ColorSet
     let icons: [String]
+}
+
+struct ColorSet {
+    let primary: String
+    let secondary: String
 }

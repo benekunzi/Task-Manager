@@ -9,6 +9,11 @@ import Foundation
 import SwiftUI
 
 var Tabs = ["house", "cart", "person"]
+var tabNames = [
+    "house": "Home",
+    "cart": "Shop",
+    "person": "Profile"
+]
 
 struct TabBarView: View {
     
@@ -22,7 +27,6 @@ struct TabBarView: View {
                 TabBarImageView(selectedTab: self.$selectedTab,
                                 tab: tab)
                 .padding(.horizontal, 30)
-                .padding(.vertical, 7)
                 
                 if tab != Tabs.last {
                     Spacer(minLength: 0)
@@ -32,8 +36,11 @@ struct TabBarView: View {
         .padding(.top, 10)
         .padding(.horizontal, 30)
         .padding(.bottom, self.bottomPadding)
-        .background(Color("BackgroundColor"))
-        .overlay(Rectangle().stroke(Color.gray, lineWidth: 2))
+        .background(
+            Rectangle()
+                .fill(Color.white)
+                .shadow(color: Color("LightGray"), radius: 1, x: 0, y: -1)
+        )
     }
     
     private var bottomPadding: CGFloat {
@@ -53,22 +60,28 @@ struct TabBarImageView : View {
     @State var didUpdateOnStartUp: Bool = false
     
     var body: some View {
-        Image(systemName: tab)
-            .resizable ()
-            .renderingMode(.template)
-            .font(.system(.body).weight(.bold))
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 25, height: 25)
-            .foregroundColor(selectedTab == tab ? Color.black : Color.gray)
-//            .padding(selectedTab == tab ? 15 : 0)
-//            .background(Color.white.opacity(selectedTab == tab ? 1 : 0).clipShape(Circle()))
-//            .offset(x: geo.frame(in: .global).minX - geo.frame(in: .global).midX,
-//                    y: selectedTab == tab  ? -45 : 0)
-            .onTapGesture {
-                withAnimation(.spring()) {
-                    self.selectedTab = tab
+        VStack(spacing: 6) {
+            Image(systemName: tab)
+                .resizable ()
+                .renderingMode(.template)
+                .font(.system(.body).weight(.bold))
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 25, height: 25)
+                .foregroundColor(selectedTab == tab ? Color.black : Color("Gray"))
+            //            .padding(selectedTab == tab ? 15 : 0)
+            //            .background(Color.white.opacity(selectedTab == tab ? 1 : 0).clipShape(Circle()))
+            //            .offset(x: geo.frame(in: .global).minX - geo.frame(in: .global).midX,
+            //                    y: selectedTab == tab  ? -45 : 0)
+                .onTapGesture {
+                    withAnimation(.spring()) {
+                        self.selectedTab = tab
+                    }
                 }
-            }
+            
+            Text(tabNames[tab]!)
+                .font(.custom("Inter-Regular", size: 12))
+                .foregroundColor(selectedTab == tab ? Color.black : Color("Gray"))
+        }
     }
 }
 

@@ -10,6 +10,7 @@ struct CreateTaskCardView: View {
     
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
+    @EnvironmentObject var themeManager: ThemeManager
     
     @StateObject var newTask: ProjectTask = ProjectTask(
         id: UUID(),
@@ -20,57 +21,77 @@ struct CreateTaskCardView: View {
         isCompleted: false)
     @State private var selectedColor: String = ""
     
-    @ObservedObject var themeManger: ThemeManager = ThemeManager()
-    
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 24) {
             HStack(alignment: .center) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16).weight(.bold))
-                    .padding(5)
-                    .foregroundStyle(Color("LightGray"))
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
-                    .onTapGesture {projectModel.showTaskEditor = false}
+                Text("Cancel")
+                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .foregroundStyle(Color.black)
+                    .onTapGesture {
+                        self.projectModel.showTaskEditor = false
+                    }
                 Spacer()
-                CreateTaskButtonView(newTask: newTask, selectedColor: $selectedColor)
+                CreateTaskButtonView(newTask: newTask)
             }
             .padding(.horizontal)
             .padding(.top)
-            
-            VStack(alignment: .leading, spacing: 25) {
-                CardTopView(newTask: newTask)
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Task Color")
-                        .font(.system(size: 20).weight(.bold))
-                    ScrollView(.horizontal) {
-                        HStack {
-                            ForEach(self.projectModel.selectedTheme.colorPalette, id: \.self) {color in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    CardTopView(newTask: newTask)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Task Color")
+                            .font(.custom("Inter-Regular_Medium", size: 18))
+                            .foregroundStyle(Color.black)
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 15) {
+                                let green = projectModel.selectedTheme.colors["green"]!.primary
+                                let blue = projectModel.selectedTheme.colors["blue"]!.primary
+                                let purple = projectModel.selectedTheme.colors["purple"]!.primary
                                 Circle()
                                     .strokeBorder(.gray, lineWidth: 1)
-                                    .background(Circle().fill(Color(color)))
+                                    .background(Circle().fill(Color(green)))
                                     .frame(width: 35, height: 35)
                                     .onTapGesture {
-                                        self.selectedColor = color
+                                        selectedColor = "green"
+                                    }
+                                Circle()
+                                    .strokeBorder(.gray, lineWidth: 1)
+                                    .background(Circle().fill(Color(blue)))
+                                    .frame(width: 35, height: 35)
+                                    .onTapGesture {
+                                        selectedColor = "blue"
+                                    }
+                                Circle()
+                                    .strokeBorder(.gray, lineWidth: 1)
+                                    .background(Circle().fill(Color(purple)))
+                                    .frame(width: 35, height: 35)
+                                    .onTapGesture {
+                                        selectedColor = "purple"
                                     }
                             }
                         }
                     }
-                }
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Task Icon")
-                        .font(.system(size: 20).weight(.bold))
-                }
-                Spacer()
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Task Icon")
+                            .font(.custom("Inter-Regular_Medium", size: 18))
+                            .foregroundStyle(Color.black)
+                    }
+                    CalendarView(color: self.$selectedColor)
+                    Spacer()
+                }.padding(.horizontal)
             }
-            .padding()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(selectedColor == "" ? projectModel.selectedTheme.colorPalette.first! : selectedColor))
+        .background(Color("BackgroundColor"))
         .foregroundStyle(Color("TextColor"))
         .edgesIgnoringSafeArea(.top)
         .onAppear {
-            self.selectedColor = self.projectModel.selectedTheme.colorPalette.first!
+            self.selectedColor = "green"
         }
+        .onChange(of: self.selectedColor) { newValue in
+            newTask.color = newValue
+        }
+        .animation(.easeInOut(duration: 0.25), value: self.selectedColor)
     }
 }
 
@@ -80,13 +101,11 @@ struct CreateTaskButtonView: View {
     @EnvironmentObject var coreDataModel: CoreDataModel
     
     @StateObject var newTask: ProjectTask
-    @Binding var selectedColor: String
     
     var body: some View {
         Button {
             if newTask.name != "" {
                 let selectedTask = projectModel.selectedTask
-                newTask.color = selectedColor
                 newTask.index = Int32(selectedTask.subtasks.count)
                 newTask.parentTaskId = selectedTask.id
                 self.projectModel.projectsTasks = self.coreDataModel.addSubtask(to: selectedTask.id, subtask: newTask)
@@ -100,20 +119,13 @@ struct CreateTaskButtonView: View {
             }
         } label: {
             if newTask.name != "" {
-                Text("Create Task")
-                    .font(.system(size: 16).weight(.bold))
-                    .foregroundColor(Color("LightGray"))
-                    .padding(5)
-                    .padding(.horizontal, 3)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
+                Text("Done")
+                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .foregroundStyle(Color.black)
             } else {
-                Text("Create Task")
-                    .font(.system(size: 16).weight(.bold))
-                    .foregroundColor(Color.gray)
-                    .padding(5)
-                    .padding(.horizontal, 3)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Color("Theme-1-VeryDarkGreen")))
-
+                Text("Done")
+                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .foregroundStyle(Color("Gray"))
             }
         }
     }
@@ -123,17 +135,18 @@ struct CardTopView: View {
     @StateObject var newTask: ProjectTask
     
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 4) {
             TextField(newTask.name == "" ? "Task Name" : newTask.name,
                       text: $newTask.name)
+            .font(.custom("Inter-Regular_Medium", size: 20))
+            .foregroundStyle(Color.black)
             .autocorrectionDisabled()
-            .font(.system(size: 22))
             
             TextField(newTask.description == "" ? "Add description" : newTask.description,
                       text: $newTask.description)
-                .font(.system(size: 14))
-                .padding(.vertical, 3)
-                .autocorrectionDisabled()
+            .font(.custom("Inter-Regular_Medium", size: 16))
+            .foregroundStyle(Color.gray)
+            .padding(.vertical, 3)
         }
     }
 }

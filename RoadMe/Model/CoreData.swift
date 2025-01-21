@@ -12,6 +12,7 @@ import UIKit
 class CoreDataModel: ObservableObject {
     
     @Published var savedEntities: [ProjectTaskEntity] = []
+    @Published var tags: [String] = []
     
     let container: NSPersistentContainer
     private var mappedEntities: Set<UUID> = []
@@ -23,6 +24,23 @@ class CoreDataModel: ObservableObject {
         self.container.loadPersistentStores { description, error in
             if let error = error {
                 print("Error loading Core Data: \(error)")
+            }
+        }
+    }
+    
+    func deleteDatabase() {
+        let persistentStoreCoordinator = container.persistentStoreCoordinator
+        let stores = persistentStoreCoordinator.persistentStores
+
+        for store in stores {
+            if let storeURL = store.url {
+                do {
+                    try persistentStoreCoordinator.remove(store)
+                    try FileManager.default.removeItem(at: storeURL)
+                    print("Successfully deleted Core Data database.")
+                } catch {
+                    print("Error deleting Core Data database: \(error.localizedDescription)")
+                }
             }
         }
     }
@@ -40,6 +58,52 @@ class CoreDataModel: ObservableObject {
         
         return savedEntities
     }
+    
+    func fetchTags() {
+        let request = NSFetchRequest<PersonEntity>(entityName: "PersonEntity")
+        
+        do {
+            let personEntity = try container.viewContext.fetch(request)
+            if let person = personEntity.first {
+                if let tagsData = person.tags as Data? {
+                    let tags = try JSONDecoder().decode([String].self, from: tagsData)
+                    print(tags)
+                    self.tags = tags
+                } else {
+                    self.tags = []
+                }
+            }
+        } catch let error {
+            print("Error fetching tags: \(error.localizedDescription)")
+        }
+    }
+    
+    func saveTags(tags: [String]) -> Bool {
+        let request = NSFetchRequest<PersonEntity>(entityName: "PersonEntity")
+        
+        do {
+            let personEntities = try container.viewContext.fetch(request)
+            
+            // If a PersonEntity exists, update its tags
+            if let personEntity = personEntities.first {
+                personEntity.tags = try JSONEncoder().encode(tags)
+            } else {
+                // If no PersonEntity exists, create a new one
+                let newPersonEntity = PersonEntity(context: container.viewContext)
+                newPersonEntity.tags = try JSONEncoder().encode(tags)
+            }
+            
+            try container.viewContext.save()
+            print("Tags saved successfully.")
+            self.fetchTags()
+            return true
+            
+        } catch {
+            print("Failed to save tags: \(error.localizedDescription)")
+            return false
+        }
+    }
+
     
     func addRootTask(task: ProjectTask, themeId: UUID) -> [ProjectTask] {
         // Create the new root task entity
@@ -138,7 +202,7 @@ class CoreDataModel: ObservableObject {
             print("Error deleting task with ID \(taskID): \(error)")
         }
         
-        return mapToModel() // Return the current model to avoid crashes
+        return saveData() // Return the current model to avoid crashes
     }
     
     func updateTask(taskToEdit: ProjectTask) -> [ProjectTask] {
@@ -179,21 +243,24 @@ class CoreDataModel: ObservableObject {
         return tasks
     }
     
-    func updateIndex(taskID: UUID, index: Int32) {
+    func updateIndex(taskID: UUID, index: Int32) -> [ProjectTask] {
         let fetchRequest: NSFetchRequest<ProjectTaskEntity> = ProjectTaskEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", taskID as CVarArg)
+        var tasks: [ProjectTask] = []
         
         do {
             let matchingTasks = try container.viewContext.fetch(fetchRequest)
             if let task = matchingTasks.first {
                 task.index = index
-                try container.viewContext.save()
+                tasks = saveData()
             } else {
                 print("Task with ID \(taskID) not found.")
             }
         } catch {
             print("Error updating task attribute: \(error)")
         }
+        
+        return tasks
     }
     
     func updateIsCompleted(taskID: UUID, isCompleted: Bool) {

@@ -79,10 +79,6 @@ struct CreateProjectView: View {
                             }
                         }
                     }
-                    Text("Project Icon")
-                        .font(.custom("Inter-Regular_Medium", size: 18))
-                        .foregroundStyle(Color.black)
-//                        .foregroundStyle(newProject.color == "" ? Color.black : Color(themeManager.currentTheme.colors[selectedColor]!.primary))
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Tag hinzufügen")
                             .font(.custom("Inter-Regular_Medium", size: 18))
@@ -189,6 +185,7 @@ struct CreateProjectButtonView: View {
     var body: some View {
         Button {
             if newProject.name != "" {
+                newProject.parentTaskId = nil
                 let mappedProjects = self.coreDataModel.addRootTask(task: newProject,
                                                                     themeId: themeManager.currentTheme.id)
                 self.projectModel.toggleUIUpdate()

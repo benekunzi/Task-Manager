@@ -164,6 +164,10 @@ class CoreDataModel: ObservableObject {
                     subtaskEntity.iconString = iconString
                 }
                 
+                if let date = subtask.date {
+                    subtaskEntity.dueDate = date
+                }
+                
                 parentTaskEntity.addToSubTasks(subtaskEntity)
                 
                 // Save changes to Core Data
@@ -234,6 +238,19 @@ class CoreDataModel: ObservableObject {
                 } else {
                     lastTask.iconString = nil
                 }
+                
+                if let date = taskToEdit.date {
+                    lastTask.dueDate = date
+                } else {
+                    lastTask.dueDate = nil
+                }
+                
+                if let parentTaskId = taskToEdit.parentTaskId {
+                    lastTask.parentTaskID = parentTaskId
+                } else {
+                    lastTask.parentTaskID = nil
+                }
+                // reload core model data
                 tasks = saveData()
             }
         } catch {
@@ -241,6 +258,44 @@ class CoreDataModel: ObservableObject {
         }
         
         return tasks
+    }
+    
+    func updateProcessForProject(_ project: ProjectTask) -> [ProjectTask] {
+        // Fetch all tasks in the hierarchy of the project
+        func traverseAndUpdate(_ task: ProjectTask) -> Double {
+            if task.isCompleted {
+                task.process = 1.0
+            } else if !task.subtasks.isEmpty {
+                // Recursively calculate process for subtasks
+                let totalSubtaskProcess = task.subtasks.reduce(0.0) { sum, subtask in
+                    sum + traverseAndUpdate(subtask)
+                }
+                task.process = totalSubtaskProcess / Double(task.subtasks.count)
+            } else {
+                task.process = 0.0
+            }
+
+            // Update the Core Data entity for this task
+            let fetchRequest: NSFetchRequest<ProjectTaskEntity> = ProjectTaskEntity.fetchRequest()
+            fetchRequest.predicate = NSPredicate(format: "id == %@", task.id as CVarArg)
+
+            do {
+                if let entity = try container.viewContext.fetch(fetchRequest).first {
+                    entity.process = task.process
+                } else {
+                    print("Task with ID \(task.id) not found for Core Data update.")
+                }
+            } catch {
+                print("Error updating process for task ID \(task.id): \(error)")
+            }
+
+            return task.process
+        }
+
+        // Start traversal and update from the project root
+        _ = traverseAndUpdate(project)
+        
+        return saveData()
     }
     
     func updateIndex(taskID: UUID, index: Int32) -> [ProjectTask] {
@@ -263,21 +318,24 @@ class CoreDataModel: ObservableObject {
         return tasks
     }
     
-    func updateIsCompleted(taskID: UUID, isCompleted: Bool) {
+    func updateIsCompleted(taskID: UUID, isCompleted: Bool) -> [ProjectTask] {
         let fetchRequest: NSFetchRequest<ProjectTaskEntity> = ProjectTaskEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", taskID as CVarArg)
+        var tasks: [ProjectTask] = []
         
         do {
             let matchingTasks = try container.viewContext.fetch(fetchRequest)
             if let task = matchingTasks.first {
                 task.isCompleted = isCompleted
-                try container.viewContext.save()
+                tasks = saveData()
             } else {
                 print("Task with ID \(taskID) not found.")
             }
         } catch {
             print("Error updating task attribute: \(error)")
         }
+        
+        return tasks
     }
     
     func reindexSubtasks(for parentTaskID: UUID?) -> [ProjectTask] {
@@ -381,6 +439,9 @@ class CoreDataModel: ObservableObject {
             if let theme = theme {
                 projectTask.theme = theme
             }
+        }
+        if let date = entity.dueDate {
+            projectTask.date = date
         }
         
         return projectTask

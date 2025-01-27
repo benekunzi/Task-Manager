@@ -11,40 +11,62 @@ import UniformTypeIdentifiers
 struct MainContentView: View {
     @Binding var showMoreOptions: Bool
     @Binding var isWiggling: Bool
+    @Binding var columns: [GridItem]
+    @Binding var numberOfColumns: Int
+    @Binding var showSubtasks: Bool
     
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
     
-    @Binding var columns: [GridItem]
-    @Binding var numberOfColumns: Int
-    
     @State var size: CGSize = .zero
-    @State var scale: CGFloat = 1
+    @Binding var scale: CGFloat
     
     var body: some View {
-        LazyVGrid(columns: self.columns, spacing: 20) {
-            ForEach(projectModel.selectedTask.subtasks, id: \.id) { task in
-                TaskCard(task: task,
-                         showMoreOptions: $showMoreOptions,
-                         isWiggling: $isWiggling,
-                         numberOfColumns: $numberOfColumns,
-                         scale: $scale)
-                .if(showMoreOptions) { view in
-                    view
-                        .onDrag {
-                            projectModel.draggedTask = task
-                            return NSItemProvider(object: task.name as NSString)
-                        }
-                        .onDrop(of: [UTType.text],
-                                delegate: DropViewDelegate(
-                                    task: task,
-                                    subtasks: $projectModel.filteredTasks,
-                                    draggedTask: $projectModel.draggedTask)
-                        )
+        ScrollViewReader { reader in
+            LazyVGrid(columns: self.columns, spacing: 20) {
+                ForEach(Array(projectModel.filteredTasks), id: \.id) { task in
+                    let taskIndex = projectModel.filteredTasks.firstIndex(where: { $0.id == task.id }) ?? 0
+                    TaskCard(task: task,
+                             showMoreOptions: $showMoreOptions,
+                             isWiggling: $isWiggling,
+                             numberOfColumns: $numberOfColumns,
+                             scale: $scale,
+                             showSubtasks: $showSubtasks)
+                    .id(taskIndex)
+                    .scaleEffect(task.isCompleted ? 0.9 : 1)
+                    .opacity(task.isCompleted ? 0.5 : 1)
+                    // Disappear up when isAppearing is false, appear from the bottom otherwise
+                    .offset(y: projectModel.offsetTaskCards)
+                    .animation(
+                        .spring(response: 0.6, dampingFraction: 0.7)
+                        .delay(Double(taskIndex) * 0.05), // Cascading effect
+                        value: projectModel.offsetTaskCards
+                    )
+                    .if(showMoreOptions) { view in
+                        view
+                            .onDrag {
+                                projectModel.draggedTask = task
+                                return NSItemProvider(object: task.name as NSString)
+                            }
+                            .onDrop(of: [UTType.text],
+                                    delegate: DropViewDelegate(
+                                        task: task,
+                                        subtasks: $projectModel.filteredTasks,
+                                        draggedTask: $projectModel.draggedTask)
+                            )
+                    }
                 }
             }
-        }.id(projectModel.redrawID)
-        .padding(.horizontal)
+            .id(projectModel.redrawID)
+            .padding(.horizontal)
+            .onChange(of: projectModel.offsetTaskCards) { newValue in print(newValue)}
+            .onAppear {
+                let taskIndex = projectModel.filteredTasks.firstIndex(where: { $0.isCompleted == false }) ?? 0
+                withAnimation(.spring(duration: 0.75)) {
+                    reader.scrollTo(taskIndex, anchor: .top)
+                }
+            }
+        }
         .onChange(of: projectModel.filteredTasks) { tasks in
             if tasks.isEmpty {
                 showMoreOptions = false
@@ -69,18 +91,8 @@ struct MainContentView: View {
                 }
             }
         }
-        .onChange(of: self.numberOfColumns) { newValue in
-            if newValue == 1 {
-                self.scale = 1.0
-            } else if newValue == 2 {
-                self.scale = 0.75
-            } else if newValue == 3 {
-                self.scale = 0.5
-            }
-        }
     }
 }
-
 
 extension View {
   func readWidth(onChange: @escaping (CGFloat) -> Void) -> some View {

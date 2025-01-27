@@ -10,6 +10,7 @@ import SwiftUI
 struct CalendarView: View {
     
     @Binding var color: String
+    @StateObject var newTask: ProjectTask
     
     @EnvironmentObject var themeManager: ThemeManager
     
@@ -43,7 +44,7 @@ struct CalendarView: View {
                     .foregroundStyle(Color.white)
                 VStack(alignment: .leading) {
                     Text("Date")
-                        .font(.custom("Inter-Regular_Medium", size: 18))
+                        .font(.custom("Inter-Regular_SemiBold", size: 16))
                     if (self.toggleDateCalander) {
                         Text(date, style: .date)
                             .font(.custom("Inter-Regular_Medium", size: 14))
@@ -87,6 +88,7 @@ struct CalendarView: View {
                                         )
                                         .onTapGesture {
                                             self.date = day
+                                            newTask.date = date
                                         }
                                 }
                                 
@@ -102,6 +104,7 @@ struct CalendarView: View {
                             .onChange(of: selectionDate) { newSelection in
                                 // Update the date based on picker selection
                                 date = date.updatedDate(monthIndex: newSelection[0], yearIndex: newSelection[1])
+                                newTask.date = date
                             }
                     }
                 }.onAppear {
@@ -123,8 +126,8 @@ struct CalendarView: View {
                     )
                     .foregroundStyle(Color.white)
                 VStack(alignment: .leading) {
-                    Text("Date")
-                        .font(.custom("Inter-Regular_Medium", size: 18))
+                    Text("Time")
+                        .font(.custom("Inter-Regular_SemiBold", size: 16))
                     if (self.toggleTimeCalander) {
                         Text(date, style: .time)
                             .font(.custom("Inter-Regular_Medium", size: 14))
@@ -149,7 +152,22 @@ struct CalendarView: View {
                             hourIndex: newSelection[0],
                             minuteIndex: newSelection[1]
                         )
+                        newTask.date = date
                     }
+            }
+        }
+        .onChange(of: self.toggleDateCalander) {newValue in
+            if !newValue {
+                self.toggleTimeCalander = false
+                newTask.date = nil
+            }
+        }
+        .onAppear {
+            print("task has date: \(newTask.date)")
+            if let taskDate = newTask.date {
+                self.date = taskDate
+                self.toggleDateCalander = true
+                self.toggleTimeCalander = true
             }
         }
         .animation(.spring(), value: self.toggleDateCalander)

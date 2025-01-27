@@ -16,10 +16,13 @@ struct ContentView: View {
     @State var selectedTab = "house"
    
     let sidebarWidth: CGFloat = UIScreen.main.bounds.width / 1.5
+    private let contentVStackGap: CGFloat = 20/2
     
     init() {
         for familyName in UIFont.familyNames {
-            if familyName == "Inter" {
+            if (familyName == "Inter" ||
+                familyName == "Bowlby One" ||
+                familyName == "Space Grotesk") {
                 for fontName in UIFont.fontNames(forFamilyName: familyName) {
                     print("\(familyName): \(fontName)")
                 }
@@ -30,14 +33,17 @@ struct ContentView: View {
     var body: some View {
         ZStack(alignment: Alignment(horizontal: .center, vertical: .bottom)) {
             TabView(selection: $selectedTab) {
-                NavigationView {
-                    WelcomeView()
-                        .background(Color("BackgroundColor"))
-                        
-                }
-                .edgesIgnoringSafeArea(.bottom)
-                .zIndex(1)
-                .tag("house")
+                WelcomeView()
+                    .background(Color("BackgroundColor"))
+                    .edgesIgnoringSafeArea(.bottom)
+                    .zIndex(1)
+                    .tag("house")
+                
+                FocusView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color("BackgroundColor"))
+                    .zIndex(1)
+                    .tag("timer")
                 
                 Shop()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -55,15 +61,19 @@ struct ContentView: View {
             }
             
             TabBarView(selectedTab: $selectedTab)
+                .readHeight {
+                    print("height of tapbar: \($0)")
+                    self.projectModel.offsetContentBottom = $0 + contentVStackGap
+                }
         }
         .sheet(isPresented: self.$projectModel.showProjectEditor) {
             CreateProjectView()
         }
         .sheet(isPresented: self.$projectModel.showTaskEditor, content: {
-            CreateTaskCardView()
+            CreateAndUpdateTaskCardView(updateExistingTask: false)
         })
         .sheet(isPresented: self.$projectModel.showEditTaskEditor, content: {
-            EditTaskEditor()
+            CreateAndUpdateTaskCardView(updateExistingTask: true)
         })
         .foregroundStyle(Color("TextColor"))
         .preferredColorScheme(.light)
@@ -77,10 +87,27 @@ struct ContentView: View {
         .environmentObject(self.projectModel)
         .environmentObject(self.coreDataModel)
         .environmentObject(self.themeManager)
-        .animation(.linear, value: self.projectModel.showTaskEditor)
-        .animation(.linear, value: self.projectModel.showProjectEditor)
-        .animation(.linear, value: self.projectModel.showEditTaskEditor)
     }
+}
+
+extension View {
+  func readHeight(onChange: @escaping (CGFloat) -> Void) -> some View {
+    background(
+      GeometryReader { geometryProxy in
+        Spacer()
+          .preference(
+            key: HeightPreferenceKey.self,
+            value: geometryProxy.size.height
+          )
+      }
+    )
+    .onPreferenceChange(HeightPreferenceKey.self, perform: onChange)
+  }
+}
+
+private struct HeightPreferenceKey: PreferenceKey {
+  static var defaultValue: CGFloat = .zero
+  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {}
 }
 
 #Preview {

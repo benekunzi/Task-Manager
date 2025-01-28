@@ -79,7 +79,7 @@ struct ContentView: View {
         .preferredColorScheme(.light)
         .edgesIgnoringSafeArea(.all)
         .onAppear {
-            _ = coreDataModel.fetchTags()
+            coreDataModel.fetchTags()
             let mappedProjects = self.coreDataModel.mapToModel()
             self.projectModel.projectsTasks = mappedProjects
             self.projectModel.selectedTask = self.projectModel.default_Project
@@ -106,10 +106,6 @@ extension View {
 }
 
 private struct HeightPreferenceKey: PreferenceKey {
-  static var defaultValue: CGFloat = .zero
-  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {}
-}
-
-#Preview {
-    ContentView()
+    static var defaultValue: CGFloat = .zero
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {}
 }

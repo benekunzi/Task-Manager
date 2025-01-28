@@ -14,6 +14,7 @@ enum TaskTab {
 class ProjectModel: ObservableObject {
     let id: UUID = UUID()
     @Published var projectsTasks: [ProjectTask] = []
+    @Published var completedTasksLookup: [Date: [UUID]] = [:]
     @Published var selectedTask: ProjectTask = ProjectTask(
         id: UUID(),
         name: "Default-Task-ID",
@@ -37,6 +38,9 @@ class ProjectModel: ObservableObject {
     @Published var offsetTopView: CGFloat = 0
     @Published var offsetContentBottom: CGFloat = 0
     @Published var taskTab: TaskTab = .tasks
+    @Published var taskCounter: Int = 0
+    
+    private let coreDataModel: CoreDataModel = CoreDataModel()
     
     init() {
         self.deviceType = UIDevice.current.userInterfaceIdiom == .phone ? .iPhone : UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .Mac
@@ -44,6 +48,8 @@ class ProjectModel: ObservableObject {
         self.selectedTask = self.default_Project
         self.offsetTaskCards = UIScreen.main.bounds.height
         updateFilteredTasks()
+        self.completedTasksLookup = coreDataModel.loadCompletedTasksLookup()
+        self.countTasks(date: .now)
     }
     
     let default_Project = ProjectTask(
@@ -63,17 +69,12 @@ class ProjectModel: ObservableObject {
         self.selectedProject = project
         updateFilteredTasks()
     }
-    
-    func updateCompleteStatus(task: ProjectTask) {
-        task.isCompleted.toggle()
-        updateFilteredTasks() // Update filtered tasks
-    }
 
     func updateFilteredTasks() {
         if let updatedTasks = findTask(in: self.projectsTasks, withID: selectedTask.id) {
             self.filteredTasks = updatedTasks.subtasks
             self.filteredTasks.sort { $0.index < $1.index }
-            self.filteredTasks.sort { $0.isCompleted == true && $1.isCompleted == false }
+            self.filteredTasks.sort { $0.isCompleted == false && $1.isCompleted == true }
         }
         self.toggleUIUpdate()
     }
@@ -81,6 +82,65 @@ class ProjectModel: ObservableObject {
     func toggleUIUpdate() {
         self.updateUI.toggle()
         self.redrawID = UUID()
+    }
+
+    func countTasks(date: Date) {
+        print("updating task counter")
+        let date = Date()
+        let normalizedDate = Calendar.current.startOfDay(for: date)
+        self.taskCounter = completedTasksLookup[normalizedDate]?.count ?? 0
+    }
+    
+    func updateCompleteStatus(task: ProjectTask) {
+        let previousDoneDate = task.doneDate
+        task.isCompleted.toggle()
+
+        if task.isCompleted {
+            task.doneDate = Date()
+        } else {
+            task.doneDate = nil
+        }
+
+        if let doneDate = task.doneDate {
+            addToLookup(taskID: task.id, for: doneDate)
+        } else if let previousDoneDate = previousDoneDate {
+            removeFromLookup(taskID: task.id, for: previousDoneDate)
+        }
+
+        updateFilteredTasks() // Update filtered tasks
+    }
+
+    private func addToLookup(taskID: UUID, for date: Date) {
+        var lookup = coreDataModel.loadCompletedTasksLookup()
+        let normalizedDate = Calendar.current.startOfDay(for: date)
+
+        if lookup[normalizedDate] != nil {
+            lookup[normalizedDate]?.append(taskID)
+        } else {
+            lookup[normalizedDate] = [taskID]
+        }
+
+        // Save updated lookup
+        coreDataModel.saveCompletedTasksLookup(lookup)
+        self.completedTasksLookup = lookup // Update in-memory lookup
+        self.countTasks(date: .now)
+    }
+
+    private func removeFromLookup(taskID: UUID, for date: Date) {
+        var lookup = coreDataModel.loadCompletedTasksLookup()
+        let normalizedDate = Calendar.current.startOfDay(for: date)
+
+        if let taskIDs = lookup[normalizedDate] {
+            lookup[normalizedDate] = taskIDs.filter { $0 != taskID }
+            if lookup[normalizedDate]?.isEmpty == true {
+                lookup.removeValue(forKey: normalizedDate) // Remove the date key if no tasks remain
+            }
+        }
+
+        // Save updated lookup
+        coreDataModel.saveCompletedTasksLookup(lookup)
+        self.completedTasksLookup = lookup // Update in-memory lookup
+        self.countTasks(date: .now)
     }
 }
 
@@ -93,11 +153,13 @@ class ProjectTask: ObservableObject, Identifiable, Equatable {
     @Published var isCompleted: Bool = false
     @Published var index: Int32 = 0
     @Published var process: Double = 0
+    @Published var tag: String?
     @Published var parentTaskId: UUID?
     @Published var iconString: String?
     @Published var iconImage: UIImage?
     @Published var coverImage: UIImage?
-    @Published var date: Date?
+    @Published var dueDate: Date?
+    @Published var doneDate: Date?
     @Published var theme: Theme?
     
     init(id: UUID,

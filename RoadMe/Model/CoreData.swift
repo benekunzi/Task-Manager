@@ -13,6 +13,7 @@ class CoreDataModel: ObservableObject {
     
     @Published var savedEntities: [ProjectTaskEntity] = []
     @Published var tags: [String] = []
+    @Published var gridSize: Int16 = 1
     
     let container: NSPersistentContainer
     private var mappedEntities: Set<UUID> = []
@@ -26,6 +27,8 @@ class CoreDataModel: ObservableObject {
                 print("Error loading Core Data: \(error)")
             }
         }
+        
+        self.fetchGridsize()
     }
     
     func deleteDatabase() {
@@ -44,21 +47,42 @@ class CoreDataModel: ObservableObject {
             }
         }
     }
-    
-    // Fetch all tasks (root-level tasks and their subtasks recursively)
-    func fetchTasks() -> [ProjectTaskEntity] {
-        let request = NSFetchRequest<ProjectTaskEntity>(entityName: "ProjectTaskEntity")
-        var savedEntities: [ProjectTaskEntity] = []
+}
+
+// MARK: - Grid Size
+extension CoreDataModel {
+    func fetchGridsize() {
+        let request = NSFetchRequest<PersonEntity>(entityName: "PersonEntity")
         
         do {
-            savedEntities = try container.viewContext.fetch(request)
+            let personEntity = try container.viewContext.fetch(request)
+            if let person = personEntity.first {
+                self.gridSize = person.gridSize
+                print("Grid Size: \(self.gridSize)")
+            }
         } catch let error {
-            print("Error fetching tasks: \(error)")
+            print("Error fetching tags: \(error.localizedDescription)")
         }
-        
-        return savedEntities
     }
     
+    func updateGridSize(_ gridSize: Int16) {
+        let request = NSFetchRequest<PersonEntity>(entityName: "PersonEntity")
+        
+        do {
+            let personEntity = try container.viewContext.fetch(request)
+            if let person = personEntity.first {
+                person.gridSize = gridSize
+                try container.viewContext.save()
+                self.fetchGridsize()
+            }
+        } catch let error {
+            print("Error fetching tags: \(error.localizedDescription)")
+        }
+    }
+}
+
+// MARK: - Tags
+extension CoreDataModel {
     func fetchTags() {
         let request = NSFetchRequest<PersonEntity>(entityName: "PersonEntity")
         
@@ -103,7 +127,79 @@ class CoreDataModel: ObservableObject {
             return false
         }
     }
+}
 
+// MARK: - Look up table and task counter
+extension CoreDataModel {
+    // Load completedTasksLookup from Core Data
+    func loadCompletedTasksLookup() -> [Date: [UUID]] {
+        let request: NSFetchRequest<PersonEntity> = PersonEntity.fetchRequest()
+        do {
+            if let personEntity = try container.viewContext.fetch(request).first,
+               let jsonData = personEntity.completedTasksLookup {
+                let decodedDictionary = try JSONDecoder().decode([String: [UUID]].self, from: jsonData)
+                return deserializeDictionary(decodedDictionary)
+            }
+        } catch {
+            print("Error loading completedTasksLookup: \(error)")
+        }
+        return [:] // Return an empty dictionary if nothing is found
+    }
+
+    // Save completedTasksLookup to Core Data
+    func saveCompletedTasksLookup(_ lookup: [Date: [UUID]]) {
+        let request: NSFetchRequest<PersonEntity> = PersonEntity.fetchRequest()
+        do {
+            let personEntity: PersonEntity
+            if let fetchedEntity = try container.viewContext.fetch(request).first {
+                personEntity = fetchedEntity
+            } else {
+                personEntity = PersonEntity(context: container.viewContext)
+            }
+            let jsonData = try JSONEncoder().encode(serializeDictionary(lookup))
+            personEntity.completedTasksLookup = jsonData
+            try container.viewContext.save()
+        } catch {
+            print("Error saving completedTasksLookup: \(error)")
+        }
+    }
+
+    // Serialize dictionary (convert Date keys to String)
+    private func serializeDictionary(_ dictionary: [Date: [UUID]]) -> [String: [UUID]] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return dictionary.reduce(into: [:]) { result, pair in
+            result[formatter.string(from: pair.key)] = pair.value
+        }
+    }
+
+    // Deserialize dictionary (convert String keys back to Date)
+    private func deserializeDictionary(_ dictionary: [String: [UUID]]) -> [Date: [UUID]] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return dictionary.reduce(into: [:]) { result, pair in
+            if let date = formatter.date(from: pair.key) {
+                result[date] = pair.value
+            }
+        }
+    }
+}
+
+// MARK: - Task
+extension CoreDataModel {
+    // Fetch all tasks (root-level tasks and their subtasks recursively)
+    func fetchTasks() -> [ProjectTaskEntity] {
+        let request = NSFetchRequest<ProjectTaskEntity>(entityName: "ProjectTaskEntity")
+        var savedEntities: [ProjectTaskEntity] = []
+        
+        do {
+            savedEntities = try container.viewContext.fetch(request)
+        } catch let error {
+            print("Error fetching tasks: \(error)")
+        }
+        
+        return savedEntities
+    }
     
     func addRootTask(task: ProjectTask, themeId: UUID) -> [ProjectTask] {
         // Create the new root task entity
@@ -117,6 +213,7 @@ class CoreDataModel: ObservableObject {
         taskEntity.parentTaskID = nil // Explicitly set as a root-level task
         taskEntity.color = task.color
         taskEntity.themeID = themeId
+        taskEntity.tag = task.tag
         
         if let coverImage = task.coverImage {
             taskEntity.coverImage = coverImage.pngData()
@@ -164,7 +261,7 @@ class CoreDataModel: ObservableObject {
                     subtaskEntity.iconString = iconString
                 }
                 
-                if let date = subtask.date {
+                if let date = subtask.dueDate {
                     subtaskEntity.dueDate = date
                 }
                 
@@ -239,7 +336,7 @@ class CoreDataModel: ObservableObject {
                     lastTask.iconString = nil
                 }
                 
-                if let date = taskToEdit.date {
+                if let date = taskToEdit.dueDate {
                     lastTask.dueDate = date
                 } else {
                     lastTask.dueDate = nil
@@ -318,7 +415,7 @@ class CoreDataModel: ObservableObject {
         return tasks
     }
     
-    func updateIsCompleted(taskID: UUID, isCompleted: Bool) -> [ProjectTask] {
+    func updateIsCompleted(taskID: UUID, isCompleted: Bool, doneDate: Date?) -> [ProjectTask] {
         let fetchRequest: NSFetchRequest<ProjectTaskEntity> = ProjectTaskEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", taskID as CVarArg)
         var tasks: [ProjectTask] = []
@@ -327,6 +424,7 @@ class CoreDataModel: ObservableObject {
             let matchingTasks = try container.viewContext.fetch(fetchRequest)
             if let task = matchingTasks.first {
                 task.isCompleted = isCompleted
+                task.doneDate = doneDate
                 tasks = saveData()
             } else {
                 print("Task with ID \(taskID) not found.")
@@ -441,7 +539,10 @@ class CoreDataModel: ObservableObject {
             }
         }
         if let date = entity.dueDate {
-            projectTask.date = date
+            projectTask.dueDate = date
+        }
+        if let tag = entity.tag {
+            projectTask.tag = tag
         }
         
         return projectTask

@@ -10,6 +10,8 @@ import SwiftUI
 // MARK: - Pomodoro App Main View
 struct FocusView: View {
     @StateObject private var pomodoroTimer = PomodoroTimer()
+    
+    private let fontModel: FontModel = FontModel()
 
     var body: some View {
         VStack(spacing: 20) {
@@ -25,12 +27,12 @@ struct FocusView: View {
             Spacer()
 
             Text(pomodoroTimer.currentState.displayName)
-                .font(.custom("Inter-Regular_Medium", size: 28))
+                .font(.custom(fontModel.font_body_medium, size: 28))
                 .foregroundStyle(Color.black)
             
             VStack(spacing: 10) {
                 Text(formatTime(seconds: pomodoroTimer.timeRemaining))
-                    .font(.custom("Inter-Regular_Bold", size: 80))
+                    .font(.custom(fontModel.font_title, size: 80))
                     .foregroundStyle(Color.black)
 
                 HStack(spacing: 10) {

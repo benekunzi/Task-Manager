@@ -24,12 +24,13 @@ struct CreateAndUpdateTaskCardView: View {
     @State private var selectedColor: String = ""
     // Vibration
     private let impactMed = UIImpactFeedbackGenerator(style: .medium)
+    private let fontModel: FontModel = FontModel()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             HStack(alignment: .center) {
                 Text("Cancel")
-                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .font(.custom(fontModel.font_body_medium, size: 16))
                     .foregroundStyle(Color.black)
                     .onTapGesture {
                         if updateExistingTask {
@@ -51,42 +52,7 @@ struct CreateAndUpdateTaskCardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     CardTopView(newTask: newTask)
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Task Color")
-                            .font(.custom("Inter-Regular_Medium", size: 18))
-                            .foregroundStyle(Color.black)
-                        ScrollView(.horizontal) {
-                            HStack(spacing: 15) {
-                                let green = projectModel.selectedTheme.colors["green"]!.primary
-                                let blue = projectModel.selectedTheme.colors["blue"]!.primary
-                                let purple = projectModel.selectedTheme.colors["purple"]!.primary
-                                Circle()
-                                    .strokeBorder(.gray, lineWidth: 1)
-                                    .background(Circle().fill(Color(green)))
-                                    .frame(width: 35, height: 35)
-                                    .onTapGesture {
-                                        impactMed.impactOccurred()
-                                        selectedColor = "green"
-                                    }
-                                Circle()
-                                    .strokeBorder(.gray, lineWidth: 1)
-                                    .background(Circle().fill(Color(blue)))
-                                    .frame(width: 35, height: 35)
-                                    .onTapGesture {
-                                        impactMed.impactOccurred()
-                                        selectedColor = "blue"
-                                    }
-                                Circle()
-                                    .strokeBorder(.gray, lineWidth: 1)
-                                    .background(Circle().fill(Color(purple)))
-                                    .frame(width: 35, height: 35)
-                                    .onTapGesture {
-                                        impactMed.impactOccurred()
-                                        selectedColor = "purple"
-                                    }
-                            }
-                        }
-                    }
+                    TaskColorPicker(selectedColor: $selectedColor)
                     CalendarView(color: self.$selectedColor, newTask: newTask)
                     Spacer()
                 }.padding(.horizontal)
@@ -112,7 +78,8 @@ struct CreateAndUpdateTaskCardView: View {
                     newTask.iconImage       = taskToEdit.iconImage
                     newTask.parentTaskId    = taskToEdit.parentTaskId
                     newTask.coverImage      = taskToEdit.coverImage
-                    newTask.date            = taskToEdit.date
+                    newTask.dueDate         = taskToEdit.dueDate
+                    newTask.doneDate        = taskToEdit.doneDate
                 }
                 print(newTask.color)
             }
@@ -134,6 +101,8 @@ struct CreateTaskButtonView: View {
     
     @StateObject var newTask: ProjectTask
     
+    private let fontModel: FontModel = FontModel()
+    
     var body: some View {
         Button {
             if newTask.name != "" {
@@ -153,11 +122,11 @@ struct CreateTaskButtonView: View {
         } label: {
             if newTask.name != "" {
                 Text("Done")
-                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .font(.custom(fontModel.font_body_medium, size: 16))
                     .foregroundStyle(Color.black)
             } else {
                 Text("Done")
-                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .font(.custom(fontModel.font_body_medium, size: 16))
                     .foregroundStyle(Color("Gray"))
             }
         }
@@ -168,11 +137,13 @@ struct CardTopView: View {
     @StateObject var newTask: ProjectTask
     @FocusState var isKeyboardFocused: Bool
     
+    private let fontModel: FontModel = FontModel()
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             TextField(newTask.name == "" ? "Task Name" : newTask.name,
                       text: $newTask.name)
-            .font(.custom("Inter-Regular_Medium", size: 18))
+            .font(.custom(fontModel.font_body_medium, size: 18))
             .foregroundStyle(Color.black)
             .autocorrectionDisabled()
             .focused($isKeyboardFocused)
@@ -191,14 +162,14 @@ struct CardTopView: View {
             if #available(iOS 16.0, *) {
                 TextField(newTask.description == "" ? "Add description" : newTask.description,
                           text: $newTask.description, axis: .vertical)
-                .font(.custom("Inter-Regular_Medium", size: 18))
+                .font(.custom(fontModel.font_body_medium, size: 18))
                 .foregroundStyle(Color.gray)
                 .padding(.vertical, 3)
                 .focused($isKeyboardFocused)
             } else {
                 TextField(newTask.description == "" ? "Add description" : newTask.description,
                           text: $newTask.description)
-                .font(.custom("Inter-Regular_Medium", size: 18))
+                .font(.custom(fontModel.font_body_medium, size: 18))
                 .foregroundStyle(Color.gray)
                 .padding(.vertical, 3)
                 .focused($isKeyboardFocused)
@@ -214,13 +185,15 @@ struct EditTaskButtonView: View {
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
     
+    private let fontModel: FontModel = FontModel()
+    
     var body: some View {
         if let taskToEdit = projectModel.taskToEdit {
             Button {
                 if ((lastTask.name != taskToEdit.name) ||
                     (lastTask.description != taskToEdit.description) ||
                     (lastTask.color != taskToEdit.color) ||
-                    (lastTask.date != taskToEdit.date)) {
+                    (lastTask.dueDate != taskToEdit.dueDate)) {
                     self.projectModel.projectsTasks = self.coreDataModel.updateTask(taskToEdit: lastTask)
                     if let updatedTask = findTask(in: projectModel.projectsTasks, withID: lastTask.parentTaskId!) {
                         print("updated task in editor")
@@ -238,13 +211,13 @@ struct EditTaskButtonView: View {
                 if ((lastTask.name != taskToEdit.name) ||
                     (lastTask.description != taskToEdit.description) ||
                     (lastTask.color != taskToEdit.color) ||
-                    (lastTask.date != taskToEdit.date)) {
+                    (lastTask.dueDate != taskToEdit.dueDate)) {
                     Text("Done")
-                        .font(.custom("Inter-Regular_Medium", size: 16))
+                        .font(.custom(fontModel.font_body_medium, size: 16))
                         .foregroundStyle(Color.black)
                 } else {
                     Text("Done")
-                        .font(.custom("Inter-Regular_Medium", size: 16))
+                        .font(.custom(fontModel.font_body_medium, size: 16))
                         .foregroundStyle(Color("Gray"))
                 }
             }
@@ -305,6 +278,52 @@ extension View {
     }
 }
 
-#Preview {
-    ContentView()
+struct TaskColorPicker: View {
+    
+    @Binding var selectedColor: String
+    
+    @EnvironmentObject var projectModel: ProjectModel
+    
+    private let impactMed = UIImpactFeedbackGenerator(style: .medium)
+    private let fontModel: FontModel = FontModel()
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Task Color")
+                .font(.custom(fontModel.font_body_medium, size: 18))
+                .foregroundStyle(Color.black)
+            ScrollView(.horizontal) {
+                HStack(spacing: 15) {
+                    let green = projectModel.selectedTheme.colors["green"]!.primary
+                    let blue = projectModel.selectedTheme.colors["blue"]!.primary
+                    let purple = projectModel.selectedTheme.colors["purple"]!.primary
+                    let circleSize: CGFloat = 28
+                    Circle()
+                        .strokeBorder(.gray, lineWidth: 1)
+                        .background(Circle().fill(Color(green)))
+                        .frame(width: circleSize, height: circleSize)
+                        .onTapGesture {
+                            impactMed.impactOccurred()
+                            selectedColor = "green"
+                        }
+                    Circle()
+                        .strokeBorder(.gray, lineWidth: 1)
+                        .background(Circle().fill(Color(blue)))
+                        .frame(width: circleSize, height: circleSize)
+                        .onTapGesture {
+                            impactMed.impactOccurred()
+                            selectedColor = "blue"
+                        }
+                    Circle()
+                        .strokeBorder(.gray, lineWidth: 1)
+                        .background(Circle().fill(Color(purple)))
+                        .frame(width: circleSize, height: circleSize)
+                        .onTapGesture {
+                            impactMed.impactOccurred()
+                            selectedColor = "purple"
+                        }
+                }
+            }
+        }
+    }
 }

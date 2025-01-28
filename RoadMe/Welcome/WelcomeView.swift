@@ -16,6 +16,8 @@ struct WelcomeView: View {
     @State var isWiggling: Bool = false
     @State var offsetWelcomeView: CGFloat = 0
     @State private var showMainView: Bool = false
+    
+    let fontModel: FontModel = FontModel()
 
     var body: some View {
         ZStack {
@@ -73,7 +75,7 @@ struct WelcomeViewMainContent: View {
         VStack(alignment: .leading, spacing: 24) {
             HStack(alignment: .center) {
                 Text("My Projects")
-                    .font(.custom("Inter-Regular_Bold", size: 20))
+                    .font(.custom("BowlbyOne-Regular", size: 20))
                     .foregroundStyle(Color.black)
                 Spacer()
                 Button {
@@ -85,9 +87,9 @@ struct WelcomeViewMainContent: View {
                         Image(systemName: "plus")
                         Text("Add Project")
                     }
-                    .font(.custom("Inter-Regular", size: 16))
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 14)
+                    .font(.custom("SpaceGrotesk-Regular", size: 16))
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 6)
                             .fill(Color.black)
@@ -117,20 +119,21 @@ struct WelcomeViewMainContent: View {
 
 struct WelcomeViewTopContent: View {
     
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, MMMM d"
-        return formatter
-    }()
+    @EnvironmentObject var projectModel: ProjectModel
+    
+    @State private var currentDate = Date()
+    @State private var timer: Timer?
+    
+    private let fontModel: FontModel = FontModel()
     
     var body: some View {
         VStack(spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Welcome Back!")
-                        .font(.custom("Inter-Regular_Bold", size: 20))
-                    Text(self.dateFormatter.string(from: Date()))
-                        .font(.custom("Inter-Regular_SemiBold", size: 14))
+                        .font(.custom(fontModel.font_title, size: 20))
+                    Text("\(formattedDate)")
+                        .font(.custom(fontModel.font_body_medium, size: 14))
                         .foregroundStyle(Color("Gray"))
                 }
                 Spacer()
@@ -143,9 +146,9 @@ struct WelcomeViewTopContent: View {
                     .padding(.horizontal)
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Great Progress!")
-                        .font(.custom("Inter-Regular_Bold", size: 18))
-                    Text("6 of 10 tasks completed today")
-                        .font(.custom("Inter-Regular_SemiBold", size: 14))
+                        .font(.custom(fontModel.font_body_bold, size: 18))
+                    Text("\(projectModel.taskCounter) of 10 tasks completed today")
+                        .font(.custom(fontModel.font_body_semiBold, size: 14))
                         .foregroundStyle(Color("Gray"))
                 }
                 Spacer()
@@ -159,6 +162,50 @@ struct WelcomeViewTopContent: View {
                     .shadow(color: Color("LightGray"), radius: 2, x: 0, y: 2)
             )
         }
+        .onAppear {
+            startMidnightTracking()
+            projectModel.countTasks(date: .now)
+        }
+        .onDisappear {
+            stopMidnightTracking()
+        }
+    }
+    
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .full
+        formatter.timeStyle = .none
+        return formatter.string(from: currentDate)
+    }
+    
+    private func startMidnightTracking() {
+        // Invalidate existing timer if any
+        timer?.invalidate()
+        
+        // Calculate the time until midnight
+        let now = Date()
+        let calendar = Calendar.current
+        if let nextMidnight = calendar.nextDate(after: now, matching: DateComponents(hour: 0, minute: 0, second: 0), matchingPolicy: .nextTime) {
+            let secondsUntilMidnight = nextMidnight.timeIntervalSince(now)
+            print("seconds till midnight: \(secondsUntilMidnight)")
+            
+            // Start a timer that triggers at midnight
+            DispatchQueue.main.asyncAfter(deadline: .now() + secondsUntilMidnight) {
+                updateDate()
+                projectModel.countTasks(date: self.currentDate)
+                // Restart the tracking to ensure continuous midnight checks
+                self.startMidnightTracking()
+            }
+        }
+    }
+    
+    private func updateDate() {
+        self.currentDate = Date()
+    }
+    
+    private func stopMidnightTracking() {
+        timer?.invalidate()
+        timer = nil
     }
 }
 

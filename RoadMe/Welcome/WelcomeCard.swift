@@ -19,6 +19,7 @@ struct WelcomeCardView: View {
     @EnvironmentObject var animationNamespace: AnimationNamespaceWrapper
     
     private let cardHeight: CGFloat = 80
+    private let fontModel: FontModel = FontModel()
     
     var body: some View {
         ZStack() {
@@ -29,22 +30,25 @@ struct WelcomeCardView: View {
                     VStack(alignment: .leading) {
                         Text(task.name)
 //                            .matchedGeometryEffect(id: "ProjectTitle", in: animationNamespace.namespace)
-                            .font(.custom("Inter-Regular_Bold", size: 16))
+                            .font(.custom(fontModel.font_body_bold, size: 16))
                             .foregroundStyle(Color.black)
                         if task.description != "" {
                             Text(task.description)
-                                .font(.custom("Inter-Regular", size: 14))
+                                .font(.custom(fontModel.font_body_regular, size: 14))
                                 .foregroundStyle(Color("Gray"))
                         }
                     }
                     Spacer()
                     
-                    Text("Private")
-                        .padding(4)
-                        .padding(.horizontal, 2)
-                        .font(.custom("Inter-Regular", size: 14))
-                        .foregroundStyle(Color(themeManager.currentTheme.colors[task.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary))
-                        .background(Capsule().fill(Color(themeManager.currentTheme.colors[task.color]?.secondary ?? themeManager.currentTheme.colors["green"]!.secondary)))
+                    if let tag = task.tag {
+                        Text(tag)
+                            .padding(4)
+                            .padding(.horizontal, 2)
+                            .font(.custom(fontModel.font_body_regular, size: 14))
+                            .foregroundStyle(Color(themeManager.currentTheme.colors[task.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary))
+                            .background(Capsule().fill(Color(themeManager.currentTheme.colors[task.color]?.secondary ?? themeManager.currentTheme.colors["green"]!.secondary)))
+                    }
+                    
                 }
                 Spacer()
             }

@@ -78,7 +78,7 @@ struct TabBarImageView : View {
                 }
             
             Text(tabNames[tab]!)
-                .font(.custom("Inter-Regular", size: 12))
+                .font(.custom("SpaceGrotesk-Regular", size: 12))
                 .foregroundColor(selectedTab == tab ? Color.black : Color("Gray"))
         }
     }

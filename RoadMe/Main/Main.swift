@@ -16,6 +16,7 @@ struct MainView: View {
     @EnvironmentObject var coreDataModel: CoreDataModel
     @EnvironmentObject var themeManager: ThemeManager
     @EnvironmentObject var animationNamespace: AnimationNamespaceWrapper
+    @Namespace private var tabAnimationNamespace
     
     @State var navigationTitle: String = ""
     @State var taskDescription: String = ""
@@ -28,6 +29,7 @@ struct MainView: View {
     @State private var showMenu: Bool = false
     @State private var showSubtasks: Bool = true
     @State private var selectedIndex: Int = 1
+    @State private var selectedTab: Int = 0
     
     private let menuGridSymbols: [String] = [
         "list.bullet",
@@ -35,10 +37,12 @@ struct MainView: View {
         "square.grid.2x2",
         "square.grid.3x2"
     ]
-    
+    private let tabs: [String] = ["Tasks", "Notes"]
+    private let fontModel: FontModel = FontModel()
+
     var body: some View {
         ZStack {
-            VStack {
+            VStack(spacing: 0) {
                 
                 TopView
                     .offset(y: projectModel.offsetTopView)
@@ -64,7 +68,7 @@ struct MainView: View {
                     VStack(alignment: .center) {
                         Spacer()
                         Text("Noch keine Aufgaben erstellt")
-                            .font(.custom("Inter-Regular_Medium", size: 16))
+                            .font(.custom(fontModel.font_body_medium, size: 16))
                             .foregroundStyle(Color.black)
                         Spacer()
                     }
@@ -90,7 +94,7 @@ struct MainView: View {
                             )
                             .clipShape(Circle())
                         Text("New Task")
-                            .font(.custom("Inter-Regular_SemiBold", size: 16))
+                            .font(.custom(fontModel.font_body_semiBold, size: 16))
                             .foregroundStyle( Color(themeManager.currentTheme.colors[projectModel.selectedTask.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary)
                             )
                     }
@@ -117,6 +121,13 @@ struct MainView: View {
             self.navigationTitle = projectModel.selectedTask.name
             self.taskDescription = projectModel.selectedTask.description
             self.projectModel.selectedTheme = projectModel.selectedTask.theme ?? themeBasis
+            self.numberOfColumns = Int(coreDataModel.gridSize) == 0 ? 1 : Int(coreDataModel.gridSize)
+            self.columns = Array(repeating: GridItem(.flexible()), count: numberOfColumns)
+            self.selectedIndex = Int(coreDataModel.gridSize)
+            print("number of columns: \(numberOfColumns)")
+            if coreDataModel.gridSize == 0 {
+                self.showSubtasks = false
+            }
         }
         .onChange(of: self.numberOfColumns) { newValue in
             if newValue == 1 {
@@ -187,7 +198,7 @@ struct MainView: View {
                 
                 HStack(spacing: 8) {
                     Text(navigationTitle)
-                        .font(.custom("Inter-Regular_Bold", size: 16))
+                        .font(.custom(fontModel.font_title, size: 16))
                         .foregroundColor(Color.black)
                         .onChange(of: self.projectModel.selectedTask) { task in
                             self.navigationTitle = task.name
@@ -209,7 +220,7 @@ struct MainView: View {
             
             if (!taskDescription.isEmpty) {
                 Text(taskDescription)
-                    .font(.custom("Inter-Regular_Bold", size: 14))
+                    .font(.custom(fontModel.font_body_bold, size: 14))
                     .foregroundColor(Color.gray)
                     .onChange(of: self.projectModel.selectedTask) { task in
                         self.taskDescription = task.description
@@ -219,7 +230,7 @@ struct MainView: View {
                 ScrollView(.horizontal) {
                     VStack(alignment: .center, spacing: 4) {
                         Text("Grid size")
-                            .font(.custom("Inter-Regular_Bold", size: 14))
+                            .font(.custom(fontModel.font_body_bold, size: 14))
                             .foregroundColor(Color.gray)
                         HStack(spacing: 10) {
                             ForEach(Array(self.menuGridSymbols.enumerated()), id: \.0) { index, symbol in
@@ -249,6 +260,8 @@ struct MainView: View {
                                             let n = index == 0 ? 1 : index
                                             self.numberOfColumns = n
                                             self.columns = Array(repeating: GridItem(.flexible()), count: n)
+                                            print("selected Index: \(index)")
+                                            self.coreDataModel.updateGridSize(Int16(index))
                                             
                                             if index == 0 {
                                                 self.showSubtasks = false
@@ -269,10 +282,43 @@ struct MainView: View {
                     }
                 }
             }
+            HStack {
+                ForEach(0..<tabs.count, id: \.self) { index in
+                    VStack(spacing: 6) {
+                        Text(tabs[index])
+                            .font(
+                                .custom(selectedTab == index
+                                        ? fontModel.font_body_bold
+                                        : fontModel.font_body_medium, size: 16)
+                            )
+                            .foregroundColor(selectedTab == index
+                                             ? Color(themeManager.currentTheme.colors[projectModel.selectedTask.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary)
+                                             : .gray)
+                        
+                        if selectedTab == index {
+                            Rectangle()
+                                .frame(height: 2)
+                                .foregroundColor(Color(themeManager.currentTheme.colors[projectModel.selectedTask.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary))
+                                .matchedGeometryEffect(id: "underline", in: tabAnimationNamespace)
+                        } else {
+                            Rectangle()
+                                .frame(height: 2)
+                                .foregroundColor(.clear)
+                        }
+                    }
+                    .onTapGesture {
+                        withAnimation {
+                            selectedTab = index
+                            if index == 0 {
+                                projectModel.taskTab = .tasks
+                            } else {
+                                projectModel.taskTab = .editor
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }.padding(.vertical, 10)
         }
     }
-}
-
-#Preview {
-    ContentView()
 }

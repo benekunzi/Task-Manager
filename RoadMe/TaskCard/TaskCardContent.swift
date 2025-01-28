@@ -27,6 +27,7 @@ struct TaskCardContentView: View {
     private let infoButtonSize: CGFloat = 18
     private let taskCounterSize: CGFloat = 12
     private let horizontalPadding: CGFloat = 20
+    private let fontModel: FontModel = FontModel()
     
     var body: some View {
         ZStack {
@@ -38,7 +39,7 @@ struct TaskCardContentView: View {
                             .foregroundStyle(Color(themeManager.currentTheme.colors[task.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary))
                             .onTapGesture {
                                 projectModel.updateCompleteStatus(task: task)
-                                projectModel.projectsTasks = coreDataModel.updateIsCompleted(taskID: task.id, isCompleted: task.isCompleted)
+                                projectModel.projectsTasks = coreDataModel.updateIsCompleted(taskID: task.id, isCompleted: task.isCompleted, doneDate: task.doneDate)
                                 if let updatedProject = findTask(in: projectModel.projectsTasks, withID: projectModel.selectedProject!.id) {
                                     projectModel.updateSelectedProject(project: updatedProject)
                                     if let project = projectModel.calculateProcessForSelectedProject() {
@@ -56,7 +57,7 @@ struct TaskCardContentView: View {
                                 .frame(width: 30 * scale)
                             if showSubstasks {
                                 Text("\(Int(task.process * 100))%")
-                                    .font(.custom("Inter-Regular_Medium", size: taskDescriptionSize * scale))
+                                    .font(.custom(fontModel.font_body_medium, size: taskDescriptionSize * scale))
                                     .foregroundStyle(Color("Gray"))
                             }
                         }
@@ -67,17 +68,17 @@ struct TaskCardContentView: View {
                             VStack(alignment: .leading, spacing: 2 * scale) {
                                 Text(task.name)
                                     .lineLimit(1)
-                                    .font(.custom("Inter-Regular_SemiBold", size: taskNameSize * scale))
+                                    .font(.custom(fontModel.font_body_semiBold, size: taskNameSize * scale))
                                     .foregroundStyle(Color.black)
                                 if (task.description != "") {
                                     Text(task.description)
-                                        .font(.custom("Inter-Regular_Medium", size: taskDescriptionSize * scale))
+                                        .font(.custom(fontModel.font_body_medium, size: taskDescriptionSize * scale))
                                         .foregroundStyle(Color("Gray"))
                                         .lineLimit(1)
                                 }
                             }
                             Spacer()
-                            Image(systemName: "info.circle.fill")
+                            Image(systemName: "pencil.circle.fill")
                                 .symbolRenderingMode(.palette)
                                 .foregroundStyle(Color(themeManager.currentTheme.colors[task.color]?.primary ?? themeManager.currentTheme.colors["green"]!.primary), Color(themeManager.currentTheme.colors[task.color]?.secondary ?? themeManager.currentTheme.colors["green"]!.secondary))
                                 .font(.system(size: infoButtonSize * scale).weight(.bold))
@@ -89,15 +90,15 @@ struct TaskCardContentView: View {
                         if showSubstasks {
                             // MARK: For date and counter
                             HStack {
-                                if let date = task.date {
+                                if let date = task.dueDate {
                                     Text(date, format: .dateTime)
-                                        .font(.custom("Inter-Regular_Medium", size: taskCounterSize * scale))
+                                        .font(.custom(fontModel.font_body_medium, size: taskCounterSize * scale))
                                         .foregroundStyle(Color("Gray"))
                                 }
                                 Spacer()
                                 if (task.subtasks.count > 0) {
                                     Text("\(task.subtasks.filter(\.isCompleted).count)/\(task.subtasks.count)")
-                                        .font(.custom("Inter-Regular_Medium", size: taskCounterSize * scale))
+                                        .font(.custom(fontModel.font_body_medium, size: taskCounterSize * scale))
                                         .foregroundStyle(Color("Gray"))
                                 }
                             }
@@ -111,7 +112,7 @@ struct TaskCardContentView: View {
                                             .frame(width: subtaskCheckBoxSize * scale,
                                                    height: subtaskCheckBoxSize * scale)
                                         Text(subtask.name)
-                                            .font(.custom("Inter-Regular_Medium", size: subtaskNameSize * scale))
+                                            .font(.custom(fontModel.font_body_medium, size: subtaskNameSize * scale))
                                             .foregroundStyle(Color.black)
                                         Spacer()
                                     }

@@ -26,12 +26,14 @@ struct CreateProjectView: View {
     @State var newTag: String = ""
     @State var tags: [String] = []
     
+    private let fontModel: FontModel = FontModel()
+    
     var body: some View {
         VStack {
             VStack(alignment: .leading, spacing: 0) {
                 HStack() {
                     Text("Cancel")
-                        .font(.custom("Inter-Regular_Medium", size: 16))
+                        .font(.custom(fontModel.font_body_medium, size: 16))
                         .foregroundStyle(Color.black)
                         .onTapGesture {projectModel.showProjectEditor = false}
                     
@@ -45,72 +47,42 @@ struct CreateProjectView: View {
                 VStack(alignment: .leading, spacing: 25) {
                     CardTopView(newTask: newProject)
             
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Main Project Color")
-                            .font(.custom("Inter-Regular_Medium", size: 18))
-                            .foregroundStyle(Color.black)
-//                            .foregroundStyle(newProject.color == "" ? Color.black : Color(themeManager.currentTheme.colors[selectedColor]!.primary))
-                        ScrollView(.horizontal) {
-                            HStack(spacing: 15) {
-                                let green = projectModel.selectedTheme.colors["green"]!.primary
-                                let blue = projectModel.selectedTheme.colors["blue"]!.primary
-                                let purple = projectModel.selectedTheme.colors["purple"]!.primary
-                                Circle()
-                                    .strokeBorder(.gray, lineWidth: 1)
-                                    .background(Circle().fill(Color(green)))
-                                    .frame(width: 35, height: 35)
-                                    .onTapGesture {
-                                        self.selectedColor = "green"
-                                    }
-                                Circle()
-                                    .strokeBorder(.gray, lineWidth: 1)
-                                    .background(Circle().fill(Color(blue)))
-                                    .frame(width: 35, height: 35)
-                                    .onTapGesture {
-                                        self.selectedColor = "blue"
-                                    }
-                                Circle()
-                                    .strokeBorder(.gray, lineWidth: 1)
-                                    .background(Circle().fill(Color(purple)))
-                                    .frame(width: 35, height: 35)
-                                    .onTapGesture {
-                                        self.selectedColor = "purple"
-                                    }
-                            }
-                        }
-                    }
+                    TaskColorPicker(selectedColor: $selectedColor)
+                    
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Tag hinzufügen")
-                            .font(.custom("Inter-Regular_Medium", size: 18))
+                            .font(.custom(fontModel.font_body_medium, size: 18))
                         WrappingHStack(id: \.self, horizontalSpacing: 20, verticalSpacing: 20) {
                             ForEach(tags, id: \.self) { tag in
                                 Text(tag)
-                                    .font(.custom("Inter-Regular_SemiBold", size: 16))
-                                    .foregroundStyle(selectedTag == tag ? Color(themeManager.currentTheme.colors[selectedColor]!.primary) : Color("LightGray"))
+                                    .font(.custom(fontModel.font_body_regular, size: 14))
+                                    .foregroundStyle(selectedTag == tag ? Color(themeManager.currentTheme.colors[selectedColor]!.primary) : Color.gray)
                                     .padding(4)
                                     .padding(.horizontal, 2)
                                     .background(
                                         RoundedRectangle(cornerRadius: 6)
-                                            .fill(selectedTag == tag ? Color(themeManager.currentTheme.colors[selectedColor]!.secondary) : Color("Gray"))
+                                            .fill(selectedTag == tag ? Color(themeManager.currentTheme.colors[selectedColor]!.secondary) : Color("LightGray"))
                                     )
                                     .onTapGesture {
                                         withAnimation(.spring()) {
                                             if self.selectedTag == tag {
                                                 self.selectedTag = ""
+                                                newProject.tag = ""
                                             } else {
                                                 self.selectedTag = tag
+                                                newProject.tag = tag
                                             }
                                         }
                                     }
                             }
                         }
                         .frame(maxWidth: .infinity, minHeight: 20)
-                        .padding(10)
+                        .padding(8)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
                         HStack {
                             TextField("Add new tag",
                                       text: $newTag)
-                            .font(.custom("Inter-Regular_Medium", size: 16))
+                            .font(.custom(fontModel.font_body_regular, size: 14))
                             .foregroundStyle(Color.black)
                             .autocorrectionDisabled()
                             
@@ -129,9 +101,9 @@ struct CreateProjectView: View {
                                 HStack {
                                     Text("Add Tag")
                                 }
-                                .font(.custom("Inter-Regular", size: 16))
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 8)
+                                .font(.custom(fontModel.font_body_regular, size: 14))
+                                .padding(.vertical, 4)
+                                .padding(.horizontal, 6)
                                 .background(
                                     RoundedRectangle(cornerRadius: 4)
                                         .fill(Color(themeManager.currentTheme.colors[selectedColor]!.secondary))
@@ -140,7 +112,7 @@ struct CreateProjectView: View {
                             }
 
                         }
-                        .padding(10)
+                        .padding(8)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
                     }
                     Spacer()
@@ -182,6 +154,8 @@ struct CreateProjectButtonView: View {
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
     
+    private let fontModel: FontModel = FontModel()
+    
     var body: some View {
         Button {
             if newProject.name != "" {
@@ -195,17 +169,13 @@ struct CreateProjectButtonView: View {
         } label: {
             if newProject.name != "" {
                 Text("Done")
-                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .font(.custom(fontModel.font_body_medium, size: 16))
                     .foregroundStyle(Color.black)
             } else {
                 Text("Done")
-                    .font(.custom("Inter-Regular_Medium", size: 16))
+                    .font(.custom(fontModel.font_body_medium, size: 16))
                     .foregroundStyle(Color("Gray"))
             }
         }
     }
-}
-
-#Preview {
-    ContentView()
 }

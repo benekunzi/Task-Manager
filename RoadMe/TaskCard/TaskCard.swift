@@ -29,7 +29,7 @@ struct TaskCard: View {
                     .fill(Color.white)
                     .shadow(color: Color("LightGray"), radius: 2, x: 0, y: 2)
             )
-            .frame(height: showSubtasks ? (150 * scale) : (75 * scale))
+            .frame(height: showSubtasks ? (150 * scale) : (50 * scale))
             .onTapGesture(count: 1) {
                 Task {
                     print("Tap Gesture. \(Date().timeIntervalSince1970)")

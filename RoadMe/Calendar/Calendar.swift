@@ -30,6 +30,8 @@ struct CalendarView: View {
         return dateFormatter
     }
     
+    private let fontModel: FontModel = FontModel()
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 10) {
@@ -44,10 +46,10 @@ struct CalendarView: View {
                     .foregroundStyle(Color.white)
                 VStack(alignment: .leading) {
                     Text("Date")
-                        .font(.custom("Inter-Regular_SemiBold", size: 16))
+                        .font(.custom(fontModel.font_body_semiBold, size: 16))
                     if (self.toggleDateCalander) {
                         Text(date, style: .date)
-                            .font(.custom("Inter-Regular_Medium", size: 14))
+                            .font(.custom(fontModel.font_body_medium, size: 14))
                     }
                 }
                 
@@ -69,7 +71,7 @@ struct CalendarView: View {
                         HStack {
                             ForEach(self.daysOfWeek.indices, id: \.self) { index in
                                 Text(daysOfWeek[index])
-                                    .font(.custom("Inter-Regular_SemiBold", size: 16))
+                                    .font(.custom(fontModel.font_body_semiBold, size: 16))
                                     .frame(maxWidth: .infinity)
                             }
                         }
@@ -79,7 +81,7 @@ struct CalendarView: View {
                                     Text("")
                                 } else {
                                     Text("\(day.formatted(.dateTime.day()))")
-                                        .font(.custom("Inter-Regular_Medium", size: 16))
+                                        .font(.custom(fontModel.font_body_medium, size: 16))
                                         .foregroundStyle(self.date == day.startOfDay ? Color.white : Color("Gray"))
                                         .frame(maxWidth: .infinity, minHeight: 40)
                                         .background(
@@ -88,7 +90,7 @@ struct CalendarView: View {
                                         )
                                         .onTapGesture {
                                             self.date = day
-                                            newTask.date = date
+                                            newTask.dueDate = date
                                         }
                                 }
                                 
@@ -104,7 +106,7 @@ struct CalendarView: View {
                             .onChange(of: selectionDate) { newSelection in
                                 // Update the date based on picker selection
                                 date = date.updatedDate(monthIndex: newSelection[0], yearIndex: newSelection[1])
-                                newTask.date = date
+                                newTask.dueDate = date
                             }
                     }
                 }.onAppear {
@@ -127,16 +129,21 @@ struct CalendarView: View {
                     .foregroundStyle(Color.white)
                 VStack(alignment: .leading) {
                     Text("Time")
-                        .font(.custom("Inter-Regular_SemiBold", size: 16))
+                        .font(.custom(fontModel.font_body_semiBold, size: 16))
                     if (self.toggleTimeCalander) {
                         Text(date, style: .time)
-                            .font(.custom("Inter-Regular_Medium", size: 14))
+                            .font(.custom(fontModel.font_body_medium, size: 14))
                     }
                 }
                 
                 Spacer()
                 Toggle("", isOn: self.$toggleTimeCalander)
                     .tint(color == "" ? Color.clear : Color(themeManager.currentTheme.colors[color]!.primary))
+            }
+            .onChange(of: self.toggleTimeCalander) { _ in
+                if !self.toggleDateCalander {
+                    self.toggleDateCalander = true
+                }
             }
             
             if toggleTimeCalander {
@@ -152,19 +159,18 @@ struct CalendarView: View {
                             hourIndex: newSelection[0],
                             minuteIndex: newSelection[1]
                         )
-                        newTask.date = date
+                        newTask.dueDate = date
                     }
             }
         }
         .onChange(of: self.toggleDateCalander) {newValue in
             if !newValue {
                 self.toggleTimeCalander = false
-                newTask.date = nil
+                newTask.dueDate = nil
             }
         }
         .onAppear {
-            print("task has date: \(newTask.date)")
-            if let taskDate = newTask.date {
+            if let taskDate = newTask.dueDate {
                 self.date = taskDate
                 self.toggleDateCalander = true
                 self.toggleTimeCalander = true

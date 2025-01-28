@@ -3,3 +3,4 @@ RoadMe/Font/
 RoadMe/Info.plist
 RoadMe/ProjectContainer.xcdatamodeld/
 RoadMe/Assets.xcassets/
+RoadMe/Model/FontModel.swift

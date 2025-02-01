@@ -30,8 +30,6 @@ struct CalendarView: View {
         return dateFormatter
     }
     
-    private let fontModel: FontModel = FontModel()
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 10) {
@@ -46,10 +44,10 @@ struct CalendarView: View {
                     .foregroundStyle(Color.white)
                 VStack(alignment: .leading) {
                     Text("Date")
-                        .font(.custom(fontModel.font_body_semiBold, size: 16))
+                        .font(.custom(GhibliFont.semiBold.name, size: 16))
                     if (self.toggleDateCalander) {
                         Text(date, style: .date)
-                            .font(.custom(fontModel.font_body_medium, size: 14))
+                            .font(.custom(GhibliFont.medium.name, size: 14))
                     }
                 }
                 
@@ -71,7 +69,7 @@ struct CalendarView: View {
                         HStack {
                             ForEach(self.daysOfWeek.indices, id: \.self) { index in
                                 Text(daysOfWeek[index])
-                                    .font(.custom(fontModel.font_body_semiBold, size: 16))
+                                    .font(.custom(GhibliFont.semiBold.name, size: 16))
                                     .frame(maxWidth: .infinity)
                             }
                         }
@@ -81,7 +79,7 @@ struct CalendarView: View {
                                     Text("")
                                 } else {
                                     Text("\(day.formatted(.dateTime.day()))")
-                                        .font(.custom(fontModel.font_body_medium, size: 16))
+                                        .font(.custom(GhibliFont.medium.name, size: 16))
                                         .foregroundStyle(self.date == day.startOfDay ? Color.white : Color("Gray"))
                                         .frame(maxWidth: .infinity, minHeight: 40)
                                         .background(
@@ -129,10 +127,10 @@ struct CalendarView: View {
                     .foregroundStyle(Color.white)
                 VStack(alignment: .leading) {
                     Text("Time")
-                        .font(.custom(fontModel.font_body_semiBold, size: 16))
+                        .font(.custom(GhibliFont.semiBold.name, size: 16))
                     if (self.toggleTimeCalander) {
                         Text(date, style: .time)
-                            .font(.custom(fontModel.font_body_medium, size: 14))
+                            .font(.custom(GhibliFont.medium.name, size: 14))
                     }
                 }
                 

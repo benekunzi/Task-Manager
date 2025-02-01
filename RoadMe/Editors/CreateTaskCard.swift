@@ -24,13 +24,12 @@ struct CreateAndUpdateTaskCardView: View {
     @State private var selectedColor: String = ""
     // Vibration
     private let impactMed = UIImpactFeedbackGenerator(style: .medium)
-    private let fontModel: FontModel = FontModel()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             HStack(alignment: .center) {
                 Text("Cancel")
-                    .font(.custom(fontModel.font_body_medium, size: 16))
+                    .font(.custom(GhibliFont.medium.name, size: 16))
                     .foregroundStyle(Color.black)
                     .onTapGesture {
                         if updateExistingTask {
@@ -101,8 +100,6 @@ struct CreateTaskButtonView: View {
     
     @StateObject var newTask: ProjectTask
     
-    private let fontModel: FontModel = FontModel()
-    
     var body: some View {
         Button {
             if newTask.name != "" {
@@ -122,11 +119,11 @@ struct CreateTaskButtonView: View {
         } label: {
             if newTask.name != "" {
                 Text("Done")
-                    .font(.custom(fontModel.font_body_medium, size: 16))
+                    .font(.custom(GhibliFont.medium.name, size: 16))
                     .foregroundStyle(Color.black)
             } else {
                 Text("Done")
-                    .font(.custom(fontModel.font_body_medium, size: 16))
+                    .font(.custom(GhibliFont.medium.name, size: 16))
                     .foregroundStyle(Color("Gray"))
             }
         }
@@ -137,13 +134,11 @@ struct CardTopView: View {
     @StateObject var newTask: ProjectTask
     @FocusState var isKeyboardFocused: Bool
     
-    private let fontModel: FontModel = FontModel()
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             TextField(newTask.name == "" ? "Task Name" : newTask.name,
                       text: $newTask.name)
-            .font(.custom(fontModel.font_body_medium, size: 18))
+            .font(.custom(GhibliFont.medium.name, size: 18))
             .foregroundStyle(Color.black)
             .autocorrectionDisabled()
             .focused($isKeyboardFocused)
@@ -162,14 +157,14 @@ struct CardTopView: View {
             if #available(iOS 16.0, *) {
                 TextField(newTask.description == "" ? "Add description" : newTask.description,
                           text: $newTask.description, axis: .vertical)
-                .font(.custom(fontModel.font_body_medium, size: 18))
+                .font(.custom(GhibliFont.medium.name, size: 18))
                 .foregroundStyle(Color.gray)
                 .padding(.vertical, 3)
                 .focused($isKeyboardFocused)
             } else {
                 TextField(newTask.description == "" ? "Add description" : newTask.description,
                           text: $newTask.description)
-                .font(.custom(fontModel.font_body_medium, size: 18))
+                .font(.custom(GhibliFont.medium.name, size: 18))
                 .foregroundStyle(Color.gray)
                 .padding(.vertical, 3)
                 .focused($isKeyboardFocused)
@@ -184,8 +179,6 @@ struct EditTaskButtonView: View {
     
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
-    
-    private let fontModel: FontModel = FontModel()
     
     var body: some View {
         if let taskToEdit = projectModel.taskToEdit {
@@ -213,11 +206,11 @@ struct EditTaskButtonView: View {
                     (lastTask.color != taskToEdit.color) ||
                     (lastTask.dueDate != taskToEdit.dueDate)) {
                     Text("Done")
-                        .font(.custom(fontModel.font_body_medium, size: 16))
+                        .font(.custom(GhibliFont.medium.name, size: 16))
                         .foregroundStyle(Color.black)
                 } else {
                     Text("Done")
-                        .font(.custom(fontModel.font_body_medium, size: 16))
+                        .font(.custom(GhibliFont.medium.name, size: 16))
                         .foregroundStyle(Color("Gray"))
                 }
             }
@@ -285,12 +278,11 @@ struct TaskColorPicker: View {
     @EnvironmentObject var projectModel: ProjectModel
     
     private let impactMed = UIImpactFeedbackGenerator(style: .medium)
-    private let fontModel: FontModel = FontModel()
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Task Color")
-                .font(.custom(fontModel.font_body_medium, size: 18))
+                .font(.custom(GhibliFont.medium.name, size: 18))
                 .foregroundStyle(Color.black)
             ScrollView(.horizontal) {
                 HStack(spacing: 15) {

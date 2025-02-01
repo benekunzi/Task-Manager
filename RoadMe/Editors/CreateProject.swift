@@ -26,14 +26,12 @@ struct CreateProjectView: View {
     @State var newTag: String = ""
     @State var tags: [String] = []
     
-    private let fontModel: FontModel = FontModel()
-    
     var body: some View {
         VStack {
             VStack(alignment: .leading, spacing: 0) {
                 HStack() {
                     Text("Cancel")
-                        .font(.custom(fontModel.font_body_medium, size: 16))
+                        .font(.custom(GhibliFont.medium.name, size: 16))
                         .foregroundStyle(Color.black)
                         .onTapGesture {projectModel.showProjectEditor = false}
                     
@@ -51,11 +49,11 @@ struct CreateProjectView: View {
                     
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Tag hinzufügen")
-                            .font(.custom(fontModel.font_body_medium, size: 18))
+                            .font(.custom(GhibliFont.medium.name, size: 18))
                         WrappingHStack(id: \.self, horizontalSpacing: 20, verticalSpacing: 20) {
                             ForEach(tags, id: \.self) { tag in
                                 Text(tag)
-                                    .font(.custom(fontModel.font_body_regular, size: 14))
+                                    .font(.custom(GhibliFont.regular.name, size: 14))
                                     .foregroundStyle(selectedTag == tag ? Color(themeManager.currentTheme.colors[selectedColor]!.primary) : Color.gray)
                                     .padding(4)
                                     .padding(.horizontal, 2)
@@ -82,7 +80,7 @@ struct CreateProjectView: View {
                         HStack {
                             TextField("Add new tag",
                                       text: $newTag)
-                            .font(.custom(fontModel.font_body_regular, size: 14))
+                            .font(.custom(GhibliFont.regular.name, size: 14))
                             .foregroundStyle(Color.black)
                             .autocorrectionDisabled()
                             
@@ -101,7 +99,7 @@ struct CreateProjectView: View {
                                 HStack {
                                     Text("Add Tag")
                                 }
-                                .font(.custom(fontModel.font_body_regular, size: 14))
+                                .font(.custom(GhibliFont.regular.name, size: 14))
                                 .padding(.vertical, 4)
                                 .padding(.horizontal, 6)
                                 .background(
@@ -154,8 +152,6 @@ struct CreateProjectButtonView: View {
     @EnvironmentObject var projectModel: ProjectModel
     @EnvironmentObject var coreDataModel: CoreDataModel
     
-    private let fontModel: FontModel = FontModel()
-    
     var body: some View {
         Button {
             if newProject.name != "" {
@@ -169,11 +165,11 @@ struct CreateProjectButtonView: View {
         } label: {
             if newProject.name != "" {
                 Text("Done")
-                    .font(.custom(fontModel.font_body_medium, size: 16))
+                    .font(.custom(GhibliFont.medium.name, size: 16))
                     .foregroundStyle(Color.black)
             } else {
                 Text("Done")
-                    .font(.custom(fontModel.font_body_medium, size: 16))
+                    .font(.custom(GhibliFont.medium.name, size: 16))
                     .foregroundStyle(Color("Gray"))
             }
         }

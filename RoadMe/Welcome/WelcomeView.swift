@@ -16,8 +16,6 @@ struct WelcomeView: View {
     @State var isWiggling: Bool = false
     @State var offsetWelcomeView: CGFloat = 0
     @State private var showMainView: Bool = false
-    
-    let fontModel: FontModel = FontModel()
 
     var body: some View {
         ZStack {
@@ -124,16 +122,14 @@ struct WelcomeViewTopContent: View {
     @State private var currentDate = Date()
     @State private var timer: Timer?
     
-    private let fontModel: FontModel = FontModel()
-    
     var body: some View {
         VStack(spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Welcome Back!")
-                        .font(.custom(fontModel.font_title, size: 20))
+                        .font(.custom(GhibliFont.title.name, size: 20))
                     Text("\(formattedDate)")
-                        .font(.custom(fontModel.font_body_medium, size: 14))
+                        .font(.custom(GhibliFont.medium.name, size: 14))
                         .foregroundStyle(Color("Gray"))
                 }
                 Spacer()
@@ -146,9 +142,9 @@ struct WelcomeViewTopContent: View {
                     .padding(.horizontal)
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Great Progress!")
-                        .font(.custom(fontModel.font_body_bold, size: 18))
+                        .font(.custom(GhibliFont.bold.name, size: 18))
                     Text("\(projectModel.taskCounter) of 10 tasks completed today")
-                        .font(.custom(fontModel.font_body_semiBold, size: 14))
+                        .font(.custom(GhibliFont.semiBold.name, size: 14))
                         .foregroundStyle(Color("Gray"))
                 }
                 Spacer()

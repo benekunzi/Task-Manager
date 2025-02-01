@@ -7,8 +7,9 @@
 
 import SwiftUI
 
+
 enum TaskTab {
-    case tasks, editor
+    case tasks, notes
 }
 
 class ProjectModel: ObservableObject {
@@ -39,6 +40,7 @@ class ProjectModel: ObservableObject {
     @Published var offsetContentBottom: CGFloat = 0
     @Published var taskTab: TaskTab = .tasks
     @Published var taskCounter: Int = 0
+    @Published var showTopMenu: Bool = false
     
     private let coreDataModel: CoreDataModel = CoreDataModel()
     

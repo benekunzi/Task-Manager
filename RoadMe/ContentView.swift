@@ -12,6 +12,7 @@ struct ContentView: View {
     @ObservedObject var projectModel: ProjectModel = ProjectModel()
     @ObservedObject var coreDataModel: CoreDataModel = CoreDataModel()
     @ObservedObject var themeManager: ThemeManager = ThemeManager()
+    @ObservedObject var editorModel: EditorModel = EditorModel()
     
     @State var selectedTab = "house"
    
@@ -87,6 +88,7 @@ struct ContentView: View {
         .environmentObject(self.projectModel)
         .environmentObject(self.coreDataModel)
         .environmentObject(self.themeManager)
+        .environmentObject(self.editorModel)
     }
 }
 

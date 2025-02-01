@@ -5,13 +5,26 @@
 //  Created by Benedict Kunzmann on 27.01.25.
 //
 
-class FontModel {
-    public var font_body_light:     String    =     "SpaceGrotesk-Light"
-    public var font_body_regular:   String    =     "SpaceGrotesk-Regular"
-    public var font_body_medium:    String    =     "SpaceGrotesk-Medium"
-    public var font_body_semiBold:  String    =     "SpaceGrotesk-SemiBold"
-    public var font_body_bold:      String    =     "SpaceGrotesk-Bold"
-    
-    public var font_title:          String    =     "BowlbyOne-Regular"
-}
+enum GhibliFont: String, CaseIterable {
+    case light = "SpaceGrotesk-Light"
+    case regular = "SpaceGrotesk-Regular"
+    case medium = "SpaceGrotesk-Medium"
+    case semiBold = "SpaceGrotesk-SemiBold"
+    case bold = "SpaceGrotesk-Bold"
+    case title = "BowlbyOne-Regular"
 
+    var name: String {
+        return self.rawValue
+    }
+    
+    var displayName: String {
+       switch self {
+       case .light: return "Light"
+       case .regular: return "Regular"
+       case .medium: return "Medium"
+       case .semiBold: return "Semi-Bold"
+       case .bold: return "Bold"
+       case .title: return "Title"
+       }
+   }
+}

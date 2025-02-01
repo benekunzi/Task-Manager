@@ -27,7 +27,6 @@ struct TaskCardContentView: View {
     private let infoButtonSize: CGFloat = 18
     private let taskCounterSize: CGFloat = 12
     private let horizontalPadding: CGFloat = 20
-    private let fontModel: FontModel = FontModel()
     
     var body: some View {
         ZStack {
@@ -57,7 +56,7 @@ struct TaskCardContentView: View {
                                 .frame(width: 30 * scale)
                             if showSubstasks {
                                 Text("\(Int(task.process * 100))%")
-                                    .font(.custom(fontModel.font_body_medium, size: taskDescriptionSize * scale))
+                                    .font(.custom(GhibliFont.medium.name, size: taskDescriptionSize * scale))
                                     .foregroundStyle(Color("Gray"))
                             }
                         }
@@ -68,11 +67,11 @@ struct TaskCardContentView: View {
                             VStack(alignment: .leading, spacing: 2 * scale) {
                                 Text(task.name)
                                     .lineLimit(1)
-                                    .font(.custom(fontModel.font_body_semiBold, size: taskNameSize * scale))
+                                    .font(.custom(GhibliFont.semiBold.name, size: taskNameSize * scale))
                                     .foregroundStyle(Color.black)
                                 if (task.description != "") {
                                     Text(task.description)
-                                        .font(.custom(fontModel.font_body_medium, size: taskDescriptionSize * scale))
+                                        .font(.custom(GhibliFont.medium.name, size: taskDescriptionSize * scale))
                                         .foregroundStyle(Color("Gray"))
                                         .lineLimit(1)
                                 }
@@ -92,13 +91,13 @@ struct TaskCardContentView: View {
                             HStack {
                                 if let date = task.dueDate {
                                     Text(date, format: .dateTime)
-                                        .font(.custom(fontModel.font_body_medium, size: taskCounterSize * scale))
+                                        .font(.custom(GhibliFont.medium.name, size: taskCounterSize * scale))
                                         .foregroundStyle(Color("Gray"))
                                 }
                                 Spacer()
                                 if (task.subtasks.count > 0) {
                                     Text("\(task.subtasks.filter(\.isCompleted).count)/\(task.subtasks.count)")
-                                        .font(.custom(fontModel.font_body_medium, size: taskCounterSize * scale))
+                                        .font(.custom(GhibliFont.medium.name, size: taskCounterSize * scale))
                                         .foregroundStyle(Color("Gray"))
                                 }
                             }
@@ -112,7 +111,7 @@ struct TaskCardContentView: View {
                                             .frame(width: subtaskCheckBoxSize * scale,
                                                    height: subtaskCheckBoxSize * scale)
                                         Text(subtask.name)
-                                            .font(.custom(fontModel.font_body_medium, size: subtaskNameSize * scale))
+                                            .font(.custom(GhibliFont.medium.name, size: subtaskNameSize * scale))
                                             .foregroundStyle(Color.black)
                                         Spacer()
                                     }
